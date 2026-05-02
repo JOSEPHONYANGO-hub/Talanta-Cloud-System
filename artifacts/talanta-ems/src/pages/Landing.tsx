@@ -1,56 +1,192 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Building2, ShieldCheck, Users } from "lucide-react";
+import { Building2, ShieldCheck, Users, ArrowRight, Sparkles, BarChart3, Globe } from "lucide-react";
 
 export default function Landing() {
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-slate-50 text-slate-900">
-      <header className="px-6 py-4 flex items-center justify-between bg-white border-b">
-        <div className="flex items-center gap-2">
-          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="Talanta" className="h-8" />
-          <span className="font-bold text-xl text-primary tracking-tight">Talanta</span>
+    <div className="min-h-[100dvh] flex flex-col bg-[#f4f5fb] text-slate-900">
+
+      {/* ── Header ─────────────────────────────────────── */}
+      <header className="px-6 py-4 flex items-center justify-between bg-white/80 backdrop-blur-sm border-b border-slate-100 sticky top-0 z-20">
+        <div className="flex items-center gap-2.5">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md">
+            <span className="text-white font-black text-sm">T</span>
+          </div>
+          <span className="font-bold text-lg tracking-tight text-slate-800">Talanta</span>
+          <span className="text-xs font-semibold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full ml-1 hidden sm:inline-block">
+            Cloud EMS
+          </span>
         </div>
-        <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2" data-testid="link-sign-in">
+        <Link
+          href="/sign-in"
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold px-4 py-2 hover:bg-indigo-700 transition-colors shadow-sm"
+          data-testid="link-sign-in"
+        >
           Sign In
+          <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-3xl space-y-8">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900">
-            Enterprise Grade <br/>
-            <span className="text-primary">Employee Management</span>
-          </h1>
-          
-          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
-            The polished command center for company directors at Talanta-Cloud Solutions. 
-            Manage your entire workforce across all branches with purposeful data density and absolute control.
-          </p>
+      {/* ── Hero ───────────────────────────────────────── */}
+      <main className="flex-1 flex flex-col">
+        <section className="flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8 pt-20 pb-16 relative overflow-hidden">
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-            <Link href="/sign-in" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-11 rounded-md px-8 w-full sm:w-auto" data-testid="link-get-started">
-              Access Dashboard
-            </Link>
-          </div>
-        </div>
+          {/* Background glow */}
+          <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/4 w-[700px] h-[400px] bg-indigo-400/10 rounded-full blur-3xl" />
+          <div className="pointer-events-none absolute top-20 right-1/4 w-48 h-48 bg-violet-400/8 rounded-full blur-2xl" />
 
-        <div className="grid sm:grid-cols-3 gap-8 max-w-4xl mx-auto mt-24 text-left">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <Users className="h-10 w-10 text-primary mb-4" />
-            <h3 className="font-bold text-lg mb-2">Complete Directory</h3>
-            <p className="text-slate-600 text-sm">Comprehensive profiles with AI-generated summaries and status tracking.</p>
+          {/* Badge */}
+          <div className="relative inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-7 shadow-sm">
+            <Sparkles className="h-3 w-3" />
+            Designed for Talanta-Cloud Solutions
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <Building2 className="h-10 w-10 text-primary mb-4" />
-            <h3 className="font-bold text-lg mb-2">Multi-Branch</h3>
-            <p className="text-slate-600 text-sm">Seamlessly manage departments and locations across the entire organization.</p>
+
+          <div className="relative max-w-3xl space-y-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+              Enterprise Grade
+              <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-500">
+                Employee Management
+              </span>
+            </h1>
+
+            <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
+              The polished command center for company directors. Manage your entire
+              workforce across all branches with purposeful data density and absolute control.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-3 rounded-xl transition-colors shadow-lg shadow-indigo-200 w-full sm:w-auto"
+                data-testid="link-get-started"
+              >
+                Access Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {/* Trust line */}
+            <p className="text-xs text-slate-400 pt-2">
+              Secured with enterprise-grade authentication · Role-based access
+            </p>
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-            <ShieldCheck className="h-10 w-10 text-primary mb-4" />
-            <h3 className="font-bold text-lg mb-2">Director Level</h3>
-            <p className="text-slate-600 text-sm">Authoritative, dense data views built specifically for leadership oversight.</p>
+        </section>
+
+        {/* ── Stats strip ────────────────────────────────── */}
+        <section className="bg-white border-y border-slate-100 py-8 px-6">
+          <div className="max-w-4xl mx-auto grid grid-cols-3 gap-8 text-center">
+            {[
+              { value: "Multi-branch", label: "Office coverage" },
+              { value: "Real-time", label: "Workforce analytics" },
+              { value: "AI-powered", label: "Employee insights" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-lg sm:text-2xl font-bold text-indigo-600">{stat.value}</p>
+                <p className="text-xs sm:text-sm text-slate-400 mt-0.5 font-medium">{stat.label}</p>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
+
+        {/* ── Feature cards ──────────────────────────────── */}
+        <section className="py-16 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">
+                Everything you need to manage your workforce
+              </h2>
+              <p className="text-slate-500 mt-3 text-sm sm:text-base max-w-xl mx-auto">
+                Built specifically for leadership oversight with a focus on clarity and speed.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[
+                {
+                  icon: Users,
+                  color: "bg-indigo-100 text-indigo-600",
+                  title: "Complete Directory",
+                  description:
+                    "Comprehensive employee profiles with AI-generated summaries, photo support, and real-time status tracking.",
+                },
+                {
+                  icon: Globe,
+                  color: "bg-violet-100 text-violet-600",
+                  title: "Multi-Branch",
+                  description:
+                    "Seamlessly manage departments and office locations across the entire organization from one place.",
+                },
+                {
+                  icon: ShieldCheck,
+                  color: "bg-emerald-100 text-emerald-600",
+                  title: "Director Level",
+                  description:
+                    "Dense, authoritative data views and bulk operations built specifically for leadership oversight.",
+                },
+                {
+                  icon: BarChart3,
+                  color: "bg-cyan-100 text-cyan-600",
+                  title: "Live Analytics",
+                  description:
+                    "Workforce breakdown by department and branch with interactive charts updating in real time.",
+                },
+                {
+                  icon: Sparkles,
+                  color: "bg-amber-100 text-amber-600",
+                  title: "AI Summaries",
+                  description:
+                    "Automatically generated executive summaries for every employee profile powered by OpenAI.",
+                },
+                {
+                  icon: Building2,
+                  color: "bg-rose-100 text-rose-600",
+                  title: "Org Structure",
+                  description:
+                    "Manage departments, assign employees, and keep your organizational structure always current.",
+                },
+              ].map((feature) => (
+                <div
+                  key={feature.title}
+                  className="group bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-200"
+                >
+                  <div className={`inline-flex p-2.5 rounded-xl ${feature.color} mb-4`}>
+                    <feature.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="font-bold text-slate-800 mb-2">{feature.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA strip ──────────────────────────────────── */}
+        <section className="px-6 py-14">
+          <div className="max-w-2xl mx-auto text-center bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-10 shadow-xl shadow-indigo-200 relative overflow-hidden">
+            <div className="pointer-events-none absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+                Ready to take control?
+              </h2>
+              <p className="text-indigo-200 text-sm mb-7">
+                Sign in to access your organization's live workforce dashboard.
+              </p>
+              <Link
+                href="/sign-in"
+                className="inline-flex items-center justify-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-7 py-3 rounded-xl transition-colors shadow-md text-sm"
+              >
+                Sign In to Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Footer ─────────────────────────────────────── */}
+        <footer className="text-center text-xs text-slate-400 py-8 border-t border-slate-100 bg-white">
+          © {new Date().getFullYear()} Talanta-Cloud Solutions. All rights reserved.
+        </footer>
       </main>
     </div>
   );
