@@ -41,7 +41,7 @@ ${yearsOfService !== null ? `Years of service: ${yearsOfService}` : ""}
 Write in third person. Focus on their role and value to the organization. Keep it professional and positive.`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
       max_tokens: 200,
     });
@@ -67,7 +67,7 @@ router.post("/ai/smart-search", async (req, res) => {
     const extractionPrompt = `Given this natural language search query for an employee management system, extract key search terms (names, job titles, departments, keywords). Return only a JSON object with: {"terms": ["term1", "term2"]}. Query: "${query}"`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: extractionPrompt }],
       max_tokens: 100,
       response_format: { type: "json_object" },

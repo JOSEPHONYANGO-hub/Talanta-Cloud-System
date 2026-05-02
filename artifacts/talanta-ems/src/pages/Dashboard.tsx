@@ -161,7 +161,7 @@ export default function Dashboard() {
                 <div key={emp.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <Avatar className="h-10 w-10 border">
-                      <AvatarImage src={emp.photoUrl ? `/api${emp.photoUrl}` : undefined} />
+                      <AvatarImage src={emp.photoUrl ? `/api/storage${emp.photoUrl}` : undefined} />
                       <AvatarFallback className="bg-primary/10 text-primary">
                         {emp.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                       </AvatarFallback>

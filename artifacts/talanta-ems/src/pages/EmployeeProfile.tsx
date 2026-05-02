@@ -157,7 +157,7 @@ export default function EmployeeProfile() {
           <Card className="overflow-hidden border-t-4 border-t-primary">
             <div className="bg-slate-50 p-6 flex flex-col items-center text-center border-b">
               <Avatar className="h-32 w-32 border-4 border-white shadow-md mb-4">
-                <AvatarImage src={employee.photoUrl ? `/api${employee.photoUrl}` : undefined} className="object-cover" />
+                <AvatarImage src={employee.photoUrl ? `/api/storage${employee.photoUrl}` : undefined} className="object-cover" />
                 <AvatarFallback className="bg-primary/10 text-primary text-4xl font-medium">
                   {employee.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                 </AvatarFallback>

@@ -7,6 +7,7 @@ import {
   useListBranches,
   ListEmployeesStatus
 } from "@workspace/api-client-react";
+import { format } from "date-fns";
 import { 
   Search, Sparkles, UserPlus, Mail, Phone, MapPin, Building2, ChevronRight, CheckCircle2, XCircle
 } from "lucide-react";
@@ -190,7 +191,7 @@ export default function Employees() {
                 <CardContent className="p-6 flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-4">
                     <Avatar className="h-16 w-16 border-2 border-white shadow-sm">
-                      <AvatarImage src={emp.photoUrl ? `/api${emp.photoUrl}` : undefined} className="object-cover" />
+                      <AvatarImage src={emp.photoUrl ? `/api/storage${emp.photoUrl}` : undefined} className="object-cover" />
                       <AvatarFallback className="bg-primary/10 text-primary text-xl font-medium">
                         {emp.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                       </AvatarFallback>
