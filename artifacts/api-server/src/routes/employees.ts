@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { employees, departments, branches } from "@workspace/db";
-import { eq, ilike, and, sql } from "drizzle-orm";
+import { eq, ilike, and, sql, inArray } from "drizzle-orm";
 import {
   CreateEmployeeBody,
   UpdateEmployeeBody,
@@ -12,6 +12,29 @@ import {
 } from "@workspace/api-zod";
 
 const router = Router();
+
+router.patch("/employees/bulk-status", async (req, res) => {
+  try {
+    const { ids, status } = req.body ?? {};
+    if (
+      !Array.isArray(ids) ||
+      ids.length === 0 ||
+      !ids.every((id: unknown) => typeof id === "number" && Number.isInteger(id) && id > 0) ||
+      (status !== "active" && status !== "inactive")
+    ) {
+      res.status(400).json({ error: "ids must be a non-empty array of positive integers and status must be 'active' or 'inactive'" });
+      return;
+    }
+    await db
+      .update(employees)
+      .set({ status, updatedAt: new Date() })
+      .where(inArray(employees.id, ids));
+    res.json({ updated: ids.length });
+  } catch (err) {
+    req.log.error({ err }, "Failed to bulk-update employee status");
+    res.status(500).json({ error: "Failed to update employees" });
+  }
+});
 
 router.get("/employees/export", async (req, res) => {
   try {
