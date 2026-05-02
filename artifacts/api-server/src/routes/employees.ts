@@ -13,6 +13,85 @@ import {
 
 const router = Router();
 
+router.get("/employees/export", async (req, res) => {
+  try {
+    const query = ListEmployeesQueryParams.safeParse(req.query);
+    if (!query.success) {
+      res.status(400).json({ error: "Invalid query parameters" });
+      return;
+    }
+    const { search, department, branch, status } = query.data;
+
+    const conditions = [];
+    if (search) conditions.push(ilike(employees.fullName, `%${search}%`));
+    if (department) conditions.push(eq(employees.departmentId, parseInt(department)));
+    if (branch) conditions.push(eq(employees.branchId, parseInt(branch)));
+    if (status) conditions.push(eq(employees.status, status));
+
+    const rows = await db
+      .select({
+        id: employees.id,
+        fullName: employees.fullName,
+        jobTitle: employees.jobTitle,
+        departmentName: departments.name,
+        branchName: branches.name,
+        email: employees.email,
+        phone: employees.phone,
+        status: employees.status,
+        dateOfEmployment: employees.dateOfEmployment,
+        createdAt: employees.createdAt,
+      })
+      .from(employees)
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(branches, eq(employees.branchId, branches.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(employees.fullName);
+
+    const headers = [
+      "ID", "Full Name", "Job Title", "Department", "Branch",
+      "Email", "Phone", "Status", "Date of Employment", "Record Created"
+    ];
+
+    const escape = (val: string | number | null | undefined) => {
+      if (val === null || val === undefined) return "";
+      const str = String(val);
+      return str.includes(",") || str.includes('"') || str.includes("\n")
+        ? `"${str.replace(/"/g, '""')}"`
+        : str;
+    };
+
+    const csvLines = [
+      headers.join(","),
+      ...rows.map(r =>
+        [
+          r.id,
+          r.fullName,
+          r.jobTitle,
+          r.departmentName,
+          r.branchName,
+          r.email,
+          r.phone,
+          r.status,
+          r.dateOfEmployment,
+          r.createdAt ? new Date(r.createdAt).toISOString().split("T")[0] : "",
+        ]
+          .map(escape)
+          .join(",")
+      ),
+    ];
+
+    const csv = csvLines.join("\r\n");
+    const filename = `talanta-employees-${new Date().toISOString().split("T")[0]}.csv`;
+
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(csv);
+  } catch (err) {
+    req.log.error({ err }, "Failed to export employees");
+    res.status(500).json({ error: "Failed to export employees" });
+  }
+});
+
 router.get("/employees", async (req, res) => {
   try {
     const query = ListEmployeesQueryParams.safeParse(req.query);

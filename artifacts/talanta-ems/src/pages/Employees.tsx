@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { format } from "date-fns";
 import { 
-  Search, Sparkles, UserPlus, Mail, Phone, MapPin, Building2, ChevronRight, CheckCircle2, XCircle
+  Search, Sparkles, UserPlus, Mail, Phone, MapPin, Building2, ChevronRight, CheckCircle2, XCircle, Download
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +35,39 @@ export default function Employees() {
   const [branch, setBranch] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
   const [isAISearch, setIsAISearch] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (debouncedSearch && !isAISearch) params.set("search", debouncedSearch);
+      if (department !== "all") params.set("department", department);
+      if (branch !== "all") params.set("branch", branch);
+      if (status !== "all") params.set("status", status);
+
+      const url = `/api/employees/export${params.toString() ? `?${params}` : ""}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Export failed");
+
+      const blob = await res.blob();
+      const filename =
+        res.headers.get("Content-Disposition")?.match(/filename="(.+?)"/)?.[1] ??
+        `talanta-employees-${new Date().toISOString().split("T")[0]}.csv`;
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch {
+      /* silent – browser will show native download error if it occurs */
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Debounce search
   useEffect(() => {
@@ -84,12 +117,23 @@ export default function Employees() {
           <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
           <p className="text-muted-foreground">Manage and view the entire workforce directory.</p>
         </div>
-        <Button asChild data-testid="button-add-employee">
-          <Link href="/employees/new">
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Employee
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isExporting}
+            data-testid="button-export-csv"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </Button>
+          <Button asChild data-testid="button-add-employee">
+            <Link href="/employees/new">
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Employee
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Card className="bg-white">
