@@ -1,7 +1,8 @@
 import { Router } from "express";
+import { randomUUID } from "crypto";
 import { getAuth, clerkClient } from "@clerk/express";
 import { db } from "@workspace/db";
-import { organizations, organizationMembers, employees, departments, branches } from "@workspace/db";
+import { organizations, organizationMembers, employees, departments, branches, orgInvitations } from "@workspace/db";
 import { eq, count, desc, isNotNull } from "drizzle-orm";
 import { requireSuperAdmin } from "../middlewares/requireSuperAdmin";
 
@@ -77,34 +78,15 @@ router.get("/super-admin/organizations", requireSuperAdmin, async (req, res) => 
 
 router.post("/super-admin/organizations", requireSuperAdmin, async (req, res) => {
   try {
-    const { name, slug, industry, primaryColor, accentColor, logoUrl, ownerEmail, ownerUserId } = req.body ?? {};
+    const { name, slug, industry, primaryColor, accentColor, logoUrl, ownerEmail } = req.body ?? {};
 
     if (!name || typeof name !== "string" || !name.trim()) {
       res.status(400).json({ error: "Organization name is required" });
       return;
     }
 
-    let ownerId: string;
-    let ownerClerkUser: Awaited<ReturnType<typeof clerkClient.users.getUser>> | undefined;
-
-    if (ownerUserId && typeof ownerUserId === "string") {
-      try {
-        ownerClerkUser = await clerkClient.users.getUser(ownerUserId);
-        ownerId = ownerClerkUser.id;
-      } catch {
-        res.status(404).json({ error: "No Talanta account found for that user ID." });
-        return;
-      }
-    } else if (ownerEmail && typeof ownerEmail === "string") {
-      const users = await clerkClient.users.getUserList({ emailAddress: [ownerEmail.toLowerCase().trim()] });
-      ownerClerkUser = users.data[0];
-      if (!ownerClerkUser) {
-        res.status(404).json({ error: `No Talanta account found for "${ownerEmail}". They must sign up first.` });
-        return;
-      }
-      ownerId = ownerClerkUser.id;
-    } else {
-      res.status(400).json({ error: "Provide ownerEmail or ownerUserId to assign an owner." });
+    if (!ownerEmail || typeof ownerEmail !== "string" || !ownerEmail.trim()) {
+      res.status(400).json({ error: "Owner email is required" });
       return;
     }
 
@@ -123,17 +105,6 @@ router.post("/super-admin/organizations", requireSuperAdmin, async (req, res) =>
       return;
     }
 
-    const existingMembership = await db
-      .select()
-      .from(organizationMembers)
-      .where(eq(organizationMembers.userId, ownerId))
-      .limit(1);
-
-    if (existingMembership.length > 0) {
-      res.status(409).json({ error: "This user already belongs to an organization." });
-      return;
-    }
-
     const [org] = await db
       .insert(organizations)
       .values({
@@ -143,26 +114,65 @@ router.post("/super-admin/organizations", requireSuperAdmin, async (req, res) =>
         primaryColor: primaryColor ?? "#6366f1",
         accentColor: accentColor ?? "#10b981",
         industry: industry ?? null,
-        ownerId,
+        ownerId: "pending",
       })
       .returning();
 
-    await db.insert(organizationMembers).values({
+    const token = randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    await db.insert(orgInvitations).values({
       orgId: org.id,
-      userId: ownerId,
+      email: ownerEmail.trim().toLowerCase(),
       role: "owner",
+      token,
+      expiresAt,
     });
 
     res.status(201).json({
       ...org,
-      memberCount: 1,
+      memberCount: 0,
       employeeCount: 0,
-      ownerEmail: ownerClerkUser?.primaryEmailAddress?.emailAddress ?? null,
-      ownerName: ownerClerkUser?.fullName ?? null,
+      ownerEmail: ownerEmail.trim().toLowerCase(),
+      inviteToken: token,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to create organization");
     res.status(500).json({ error: "Failed to create organization" });
+  }
+});
+
+router.post("/super-admin/organizations/:id/invite", requireSuperAdmin, async (req, res) => {
+  try {
+    const orgId = parseInt(req.params.id, 10);
+    if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org ID" }); return; }
+
+    const { email, role } = req.body ?? {};
+    if (!email || typeof email !== "string") {
+      res.status(400).json({ error: "Email is required" });
+      return;
+    }
+
+    const [org] = await db.select().from(organizations).where(eq(organizations.id, orgId)).limit(1);
+    if (!org) { res.status(404).json({ error: "Organization not found" }); return; }
+
+    const token = randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const [invite] = await db.insert(orgInvitations).values({
+      orgId,
+      email: email.trim().toLowerCase(),
+      role: (role as "owner" | "admin" | "member") ?? "admin",
+      token,
+      expiresAt,
+    }).returning();
+
+    res.status(201).json({ ...invite, orgName: org.name });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create invite");
+    res.status(500).json({ error: "Failed to create invite" });
   }
 });
 

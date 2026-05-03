@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/table";
 import {
   Building2, Users, Briefcase, LayoutDashboard,
-  Search, Trash2, Eye, ShieldCheck, Plus,
+  Search, Trash2, Eye, ShieldCheck, Plus, Copy, CheckCheck, Link2, Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -58,6 +58,8 @@ export default function SuperAdmin() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<OrgWithStats | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [inviteResult, setInviteResult] = useState<{ orgName: string; inviteUrl: string; email: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const [form, setForm] = useState<CreateOrgAdminInput>({
     name: "",
@@ -101,9 +103,11 @@ export default function SuperAdmin() {
         accentColor: form.accentColor,
         ownerEmail: form.ownerEmail.trim(),
       });
-      toast.success(`"${org.name}" created and assigned to ${org.ownerEmail ?? form.ownerEmail}`);
+
+      const inviteUrl = `${window.location.origin}/accept-invite?token=${org.inviteToken}`;
       setShowCreate(false);
       setForm({ name: "", slug: "", industry: "", primaryColor: "#6366f1", accentColor: "#10b981", ownerEmail: "" });
+      setInviteResult({ orgName: org.name, inviteUrl, email: org.ownerEmail ?? form.ownerEmail });
     } catch (err: any) {
       toast.error(err.message ?? "Failed to create organization");
     }
@@ -118,6 +122,15 @@ export default function SuperAdmin() {
     } catch (err: any) {
       toast.error(err.message ?? "Failed to delete organization");
     }
+  }
+
+  function handleCopy() {
+    if (!inviteResult) return;
+    navigator.clipboard.writeText(inviteResult.inviteUrl).then(() => {
+      setCopied(true);
+      toast.success("Invite link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2500);
+    });
   }
 
   return (
@@ -144,30 +157,10 @@ export default function SuperAdmin() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Total Organizations"
-          value={statsLoading ? "—" : (stats?.totalOrganizations ?? 0)}
-          icon={Building2}
-          color="bg-rose-500"
-        />
-        <StatCard
-          title="Total Employees"
-          value={statsLoading ? "—" : (stats?.totalEmployees ?? 0)}
-          icon={Users}
-          color="bg-indigo-500"
-        />
-        <StatCard
-          title="Total Members"
-          value={statsLoading ? "—" : (stats?.totalMembers ?? 0)}
-          icon={Briefcase}
-          color="bg-emerald-500"
-        />
-        <StatCard
-          title="Total Departments"
-          value={statsLoading ? "—" : (stats?.totalDepartments ?? 0)}
-          icon={LayoutDashboard}
-          color="bg-amber-500"
-        />
+        <StatCard title="Total Organizations" value={statsLoading ? "—" : (stats?.totalOrganizations ?? 0)} icon={Building2} color="bg-rose-500" />
+        <StatCard title="Total Employees" value={statsLoading ? "—" : (stats?.totalEmployees ?? 0)} icon={Users} color="bg-indigo-500" />
+        <StatCard title="Total Members" value={statsLoading ? "—" : (stats?.totalMembers ?? 0)} icon={Briefcase} color="bg-emerald-500" />
+        <StatCard title="Total Departments" value={statsLoading ? "—" : (stats?.totalDepartments ?? 0)} icon={LayoutDashboard} color="bg-amber-500" />
       </div>
 
       {/* Organizations table */}
@@ -191,15 +184,11 @@ export default function SuperAdmin() {
         </CardHeader>
         <CardContent className="px-0 pb-0">
           {orgsLoading ? (
-            <div className="flex items-center justify-center h-32 text-sm text-slate-400">
-              Loading organizations…
-            </div>
+            <div className="flex items-center justify-center h-32 text-sm text-slate-400">Loading organizations…</div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <Building2 className="h-8 w-8 text-slate-200" />
-              <p className="text-sm text-slate-400">
-                {search ? "No organizations match your search" : "No organizations yet"}
-              </p>
+              <p className="text-sm text-slate-400">{search ? "No organizations match your search" : "No organizations yet"}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -253,11 +242,7 @@ export default function SuperAdmin() {
                       </TableCell>
                       <TableCell className="pr-6">
                         <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost" size="sm"
-                            className="h-7 w-7 p-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
-                            asChild
-                          >
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50" asChild>
                             <Link href={`/super-admin/organizations/${org.id}`}>
                               <Eye className="h-3.5 w-3.5" />
                             </Link>
@@ -293,91 +278,92 @@ export default function SuperAdmin() {
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="org-name">Organization Name <span className="text-rose-500">*</span></Label>
-                <Input
-                  id="org-name"
-                  placeholder="Acme Corp"
-                  value={form.name}
-                  onChange={(e) => handleFormChange("name", e.target.value)}
-                  autoFocus
-                />
+                <Input id="org-name" placeholder="Acme Corp" value={form.name} onChange={(e) => handleFormChange("name", e.target.value)} autoFocus />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="org-slug">Workspace URL</Label>
                 <div className="flex items-center">
                   <span className="text-xs text-slate-400 mr-1">/</span>
-                  <Input
-                    id="org-slug"
-                    placeholder="acme-corp"
-                    value={form.slug}
-                    onChange={(e) => handleFormChange("slug", e.target.value)}
-                  />
+                  <Input id="org-slug" placeholder="acme-corp" value={form.slug} onChange={(e) => handleFormChange("slug", e.target.value)} />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="org-industry">Industry</Label>
-                <Input
-                  id="org-industry"
-                  placeholder="Technology"
-                  value={form.industry}
-                  onChange={(e) => handleFormChange("industry", e.target.value)}
-                />
+                <Input id="org-industry" placeholder="Technology" value={form.industry} onChange={(e) => handleFormChange("industry", e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="org-primary">Primary Color</Label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    id="org-primary"
-                    value={form.primaryColor}
-                    onChange={(e) => handleFormChange("primaryColor", e.target.value)}
-                    className="h-9 w-14 rounded border border-input cursor-pointer"
-                  />
-                  <Input
-                    value={form.primaryColor}
-                    onChange={(e) => handleFormChange("primaryColor", e.target.value)}
-                    className="font-mono text-xs"
-                  />
+                  <input type="color" id="org-primary" value={form.primaryColor} onChange={(e) => handleFormChange("primaryColor", e.target.value)} className="h-9 w-14 rounded border border-input cursor-pointer" />
+                  <Input value={form.primaryColor} onChange={(e) => handleFormChange("primaryColor", e.target.value)} className="font-mono text-xs" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="org-accent">Accent Color</Label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    id="org-accent"
-                    value={form.accentColor}
-                    onChange={(e) => handleFormChange("accentColor", e.target.value)}
-                    className="h-9 w-14 rounded border border-input cursor-pointer"
-                  />
-                  <Input
-                    value={form.accentColor}
-                    onChange={(e) => handleFormChange("accentColor", e.target.value)}
-                    className="font-mono text-xs"
-                  />
+                  <input type="color" id="org-accent" value={form.accentColor} onChange={(e) => handleFormChange("accentColor", e.target.value)} className="h-9 w-14 rounded border border-input cursor-pointer" />
+                  <Input value={form.accentColor} onChange={(e) => handleFormChange("accentColor", e.target.value)} className="font-mono text-xs" />
                 </div>
               </div>
               <div className="col-span-2 space-y-2">
-                <Label htmlFor="owner-email">Owner Email <span className="text-rose-500">*</span></Label>
-                <Input
-                  id="owner-email"
-                  type="email"
-                  placeholder="owner@company.com"
-                  value={form.ownerEmail}
-                  onChange={(e) => handleFormChange("ownerEmail", e.target.value)}
-                />
-                <p className="text-xs text-slate-400">
-                  The person must have a Talanta account. They'll be set as the org owner.
+                <Label htmlFor="owner-email">Admin Email <span className="text-rose-500">*</span></Label>
+                <Input id="owner-email" type="email" placeholder="admin@company.com" value={form.ownerEmail} onChange={(e) => handleFormChange("ownerEmail", e.target.value)} />
+                <p className="text-xs text-slate-400 flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  An invite link will be generated. Share it with the org admin so they can sign in and claim their workspace.
                 </p>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button
-              onClick={handleCreate}
-              disabled={createMutation.isPending || !form.name.trim() || !form.ownerEmail.trim()}
-            >
-              {createMutation.isPending ? "Creating…" : "Create Organization"}
+            <Button onClick={handleCreate} disabled={createMutation.isPending || !form.name.trim() || !form.ownerEmail.trim()}>
+              {createMutation.isPending ? "Creating…" : "Create & Generate Invite"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite link dialog — shown after org creation */}
+      <Dialog open={!!inviteResult} onOpenChange={(open) => { if (!open) setInviteResult(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5 text-indigo-500" />
+              Organization Created — Share Invite Link
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4 text-sm text-indigo-800">
+              <p className="font-semibold mb-1">"{inviteResult?.orgName}" is ready!</p>
+              <p className="text-indigo-600 text-xs">
+                Share the link below with <span className="font-medium">{inviteResult?.email}</span>. When they open it and sign in, they'll automatically join as the org owner.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Invite Link (valid for 7 days)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={inviteResult?.inviteUrl ?? ""}
+                  className="font-mono text-xs bg-slate-50 select-all"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={handleCopy}
+                  className={cn("shrink-0 transition-colors", copied && "border-emerald-300 text-emerald-600 bg-emerald-50")}
+                >
+                  {copied ? <CheckCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-slate-400">Click the link field to select all, or use the copy button.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCopy} className="w-full" variant={copied ? "outline" : "default"}>
+              {copied ? <><CheckCheck className="mr-2 h-4 w-4" />Copied!</> : <><Copy className="mr-2 h-4 w-4" />Copy Invite Link</>}
             </Button>
           </DialogFooter>
         </DialogContent>

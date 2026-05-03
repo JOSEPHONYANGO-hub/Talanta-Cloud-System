@@ -10,6 +10,7 @@ import organizationsRouter from "./organizations";
 import superAdminRouter from "./superAdmin";
 import membersRouter from "./members";
 import activityRouter from "./activity";
+import invitationsRouter from "./invitations";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(branchesRouter);
 router.use(dashboardRouter);
 router.use(aiRouter);
 router.use(storageRouter);
+router.use(invitationsRouter);
 
 export default router;

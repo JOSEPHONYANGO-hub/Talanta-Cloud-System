@@ -23,6 +23,7 @@ import OrgAdmin from "@/pages/OrgAdmin";
 import Members from "@/pages/Members";
 import SuperAdmin from "@/pages/SuperAdmin";
 import SuperAdminOrgDetail from "@/pages/SuperAdminOrgDetail";
+import AcceptInvite from "@/pages/AcceptInvite";
 
 import Layout from "@/components/layout/Layout";
 import { SuperAdminLayout } from "@/components/layout/SuperAdminLayout";
@@ -254,6 +255,9 @@ function ClerkProviderWithRoutes() {
                   <Redirect to="/" />
                 </Show>
               </Route>
+
+              {/* Invite acceptance — public, no auth required */}
+              <Route path="/accept-invite" component={AcceptInvite} />
 
               {/* Super admin routes */}
               <SuperAdminRoute path="/super-admin" component={SuperAdmin} />
