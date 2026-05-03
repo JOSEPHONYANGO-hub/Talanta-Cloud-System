@@ -160,10 +160,19 @@ router.post("/employees", requireOrg, requireRole("admin"), async (req, res) => 
       res.status(400).json({ error: body.error.message });
       return;
     }
+    if (!req.orgId) {
+      res.status(403).json({ error: "No organization found", code: "NO_ORG" });
+      return;
+    }
     const [emp] = await db
       .insert(employees)
       .values({ ...body.data, orgId: req.orgId, status: body.data.status ?? "active" })
       .returning();
+
+    if (!emp) {
+      res.status(500).json({ error: "Failed to create employee" });
+      return;
+    }
 
     await createActivityLog({
       orgId: req.orgId,
