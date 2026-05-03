@@ -5,6 +5,7 @@ import { organizationMembers } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { requireOrg } from "../middlewares/requireOrg";
 import { requireRole } from "../middlewares/requireRole";
+import { createActivityLog } from "./activity";
 
 const router = Router();
 
@@ -91,6 +92,15 @@ router.post("/members", requireOrg, requireRole("admin"), async (req, res) => {
       .values({ orgId: req.orgId, userId: targetUserId!, role: finalRole })
       .returning();
 
+    await createActivityLog({
+      orgId: req.orgId,
+      actorUserId: getAuth(req).userId ?? "unknown",
+      action: "invite",
+      entityType: "member",
+      entityId: member.id,
+      metadata: { userId: member.userId, role: member.role },
+    });
+
     res.status(201).json({
       ...member,
       email: clerkUser.primaryEmailAddress?.emailAddress ?? null,
@@ -136,6 +146,15 @@ router.patch("/members/:userId", requireOrg, requireRole("owner"), async (req, r
       .where(and(eq(organizationMembers.orgId, req.orgId), eq(organizationMembers.userId, targetUserId)))
       .returning();
 
+    await createActivityLog({
+      orgId: req.orgId,
+      actorUserId: currentUserId ?? "unknown",
+      action: "change_role",
+      entityType: "member",
+      entityId: updated.id,
+      metadata: { userId: updated.userId, role: updated.role },
+    });
+
     res.json(await enrichMember(updated));
   } catch (err) {
     req.log.error({ err }, "Failed to update member role");
@@ -172,6 +191,15 @@ router.delete("/members/:userId", requireOrg, requireRole("admin"), async (req, 
     await db
       .delete(organizationMembers)
       .where(and(eq(organizationMembers.orgId, req.orgId), eq(organizationMembers.userId, targetUserId)));
+
+    await createActivityLog({
+      orgId: req.orgId,
+      actorUserId: currentUserId ?? "unknown",
+      action: "remove_member",
+      entityType: "member",
+      entityId: target.id,
+      metadata: { userId: target.userId, role: target.role },
+    });
 
     res.json({ success: true });
   } catch (err) {

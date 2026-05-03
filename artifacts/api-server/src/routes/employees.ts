@@ -12,6 +12,7 @@ import {
 } from "@workspace/api-zod";
 import { requireOrg } from "../middlewares/requireOrg";
 import { requireRole } from "../middlewares/requireRole";
+import { createActivityLog } from "./activity";
 
 const router = Router();
 
@@ -27,11 +28,13 @@ router.patch("/employees/bulk-status", requireOrg, requireRole("admin"), async (
       res.status(400).json({ error: "ids must be a non-empty array of positive integers and status must be 'active' or 'inactive'" });
       return;
     }
-    await db
+    const [updatedRows] = await db
       .update(employees)
       .set({ status, updatedAt: new Date() })
-      .where(and(inArray(employees.id, ids), eq(employees.orgId, req.orgId)));
-    res.json({ updated: ids.length });
+      .where(and(inArray(employees.id, ids), eq(employees.orgId, req.orgId)))
+      .returning({ id: employees.id });
+    await createActivityLog({ orgId: req.orgId, actorUserId: req.userId ?? "unknown", action: "bulk_status_update", entityType: "employee", entityId: "bulk", metadata: { ids, status } });
+    res.json({ updated: ids.length, sample: updatedRows?.id ?? null });
   } catch (err) {
     req.log.error({ err }, "Failed to bulk-update employee status");
     res.status(500).json({ error: "Failed to update employees" });
@@ -162,6 +165,15 @@ router.post("/employees", requireOrg, requireRole("admin"), async (req, res) => 
       .values({ ...body.data, orgId: req.orgId, status: body.data.status ?? "active" })
       .returning();
 
+    await createActivityLog({
+      orgId: req.orgId,
+      actorUserId: req.userId ?? "unknown",
+      action: "create",
+      entityType: "employee",
+      entityId: emp.id,
+      metadata: { fullName: emp.fullName, jobTitle: emp.jobTitle },
+    });
+
     const dept = emp.departmentId
       ? await db.select().from(departments).where(eq(departments.id, emp.departmentId)).limit(1)
       : [];
@@ -228,6 +240,15 @@ router.put("/employees/:id", requireOrg, requireRole("admin"), async (req, res) 
 
     if (!emp) { res.status(404).json({ error: "Employee not found" }); return; }
 
+    await createActivityLog({
+      orgId: req.orgId,
+      actorUserId: req.userId ?? "unknown",
+      action: "update",
+      entityType: "employee",
+      entityId: emp.id,
+      metadata: { fullName: emp.fullName, jobTitle: emp.jobTitle },
+    });
+
     const dept = emp.departmentId
       ? await db.select().from(departments).where(eq(departments.id, emp.departmentId)).limit(1)
       : [];
@@ -253,6 +274,16 @@ router.delete("/employees/:id", requireOrg, requireRole("admin"), async (req, re
       .returning();
 
     if (!deleted) { res.status(404).json({ error: "Employee not found" }); return; }
+
+    await createActivityLog({
+      orgId: req.orgId,
+      actorUserId: req.userId ?? "unknown",
+      action: "delete",
+      entityType: "employee",
+      entityId: deleted.id,
+      metadata: { fullName: deleted.fullName, jobTitle: deleted.jobTitle },
+    });
+
     res.json({ success: true });
   } catch (err) {
     req.log.error({ err }, "Failed to delete employee");
