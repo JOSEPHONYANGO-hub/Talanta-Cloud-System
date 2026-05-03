@@ -115,7 +115,7 @@ export default function EmployeeForm() {
 
   const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
-      setPhotoUrl(response.objectPath.startsWith("/api") ? response.objectPath : `/api${response.objectPath}`);
+      setPhotoUrl(response.objectPath);
       toast({ title: "Photo uploaded successfully." });
     },
     onError: (err) => {
@@ -141,8 +141,7 @@ export default function EmployeeForm() {
     try {
       const uploaded = await uploadFile(file);
       if (!uploaded) throw new Error("Upload failed");
-      const { objectPath } = uploaded;
-      setPhotoUrl(objectPath.startsWith("/api") ? objectPath : `/api${objectPath}`);
+      setPhotoUrl(uploaded.objectPath);
     } catch (err: any) {
       console.error(err);
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
@@ -192,8 +191,8 @@ export default function EmployeeForm() {
       phone: data.phone,
       email: data.email,
       dateOfEmployment: data.dateOfEmployment.toISOString().split('T')[0],
-      status: (data.isActive ? "active" : "inactive") as CreateEmployeeBodyStatus & UpdateEmployeeBodyStatus,
-      photoUrl: photoUrl
+      status: (data.isActive ? "active" : "inactive") as CreateEmployeeBodyStatus,
+      photoUrl
     };
 
     if (isEditing) {
