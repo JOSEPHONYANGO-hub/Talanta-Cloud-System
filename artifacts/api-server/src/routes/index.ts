@@ -6,9 +6,11 @@ import branchesRouter from "./branches";
 import dashboardRouter from "./dashboard";
 import aiRouter from "./ai";
 import storageRouter from "./storage";
+import organizationsRouter from "./organizations";
 
 const router: IRouter = Router();
 
+router.use(organizationsRouter);
 router.use(healthRouter);
 router.use(employeesRouter);
 router.use(departmentsRouter);

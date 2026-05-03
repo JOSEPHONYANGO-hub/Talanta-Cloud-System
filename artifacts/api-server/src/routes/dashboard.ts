@@ -1,26 +1,25 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { employees, departments, branches } from "@workspace/db";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, count, sql, and } from "drizzle-orm";
+import { requireOrg } from "../middlewares/requireOrg";
 
 const router = Router();
 
-router.get("/dashboard/stats", async (req, res) => {
+router.get("/dashboard/stats", requireOrg, async (req, res) => {
   try {
-    const [totalRow] = await db.select({ count: count() }).from(employees);
-    const [activeRow] = await db
-      .select({ count: count() })
-      .from(employees)
-      .where(eq(employees.status, "active"));
-    const [deptRow] = await db.select({ count: count() }).from(departments);
-    const [branchRow] = await db.select({ count: count() }).from(branches);
+    const orgId = req.orgId;
 
-    const now = new Date();
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const [totalRow] = await db.select({ count: count() }).from(employees).where(eq(employees.orgId, orgId));
+    const [activeRow] = await db.select({ count: count() }).from(employees).where(and(eq(employees.status, "active"), eq(employees.orgId, orgId)));
+    const [deptRow] = await db.select({ count: count() }).from(departments).where(eq(departments.orgId, orgId));
+    const [branchRow] = await db.select({ count: count() }).from(branches).where(eq(branches.orgId, orgId));
+
+    const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const [newThisMonthRow] = await db
       .select({ count: count() })
       .from(employees)
-      .where(sql`${employees.createdAt} >= ${firstOfMonth}`);
+      .where(and(eq(employees.orgId, orgId), sql`${employees.createdAt} >= ${firstOfMonth}`));
 
     res.json({
       totalEmployees: totalRow?.count ?? 0,
@@ -35,15 +34,13 @@ router.get("/dashboard/stats", async (req, res) => {
   }
 });
 
-router.get("/dashboard/employees-by-department", async (req, res) => {
+router.get("/dashboard/employees-by-department", requireOrg, async (req, res) => {
   try {
     const rows = await db
-      .select({
-        name: departments.name,
-        count: count(employees.id),
-      })
+      .select({ name: departments.name, count: count(employees.id) })
       .from(departments)
-      .leftJoin(employees, eq(departments.id, employees.departmentId))
+      .leftJoin(employees, and(eq(departments.id, employees.departmentId), eq(employees.orgId, req.orgId)))
+      .where(eq(departments.orgId, req.orgId))
       .groupBy(departments.name);
 
     res.json(rows);
@@ -53,15 +50,13 @@ router.get("/dashboard/employees-by-department", async (req, res) => {
   }
 });
 
-router.get("/dashboard/employees-by-branch", async (req, res) => {
+router.get("/dashboard/employees-by-branch", requireOrg, async (req, res) => {
   try {
     const rows = await db
-      .select({
-        name: branches.name,
-        count: count(employees.id),
-      })
+      .select({ name: branches.name, count: count(employees.id) })
       .from(branches)
-      .leftJoin(employees, eq(branches.id, employees.branchId))
+      .leftJoin(employees, and(eq(branches.id, employees.branchId), eq(employees.orgId, req.orgId)))
+      .where(eq(branches.orgId, req.orgId))
       .groupBy(branches.name);
 
     res.json(rows);
@@ -71,7 +66,7 @@ router.get("/dashboard/employees-by-branch", async (req, res) => {
   }
 });
 
-router.get("/dashboard/recent-employees", async (req, res) => {
+router.get("/dashboard/recent-employees", requireOrg, async (req, res) => {
   try {
     const rows = await db
       .select({
@@ -94,6 +89,7 @@ router.get("/dashboard/recent-employees", async (req, res) => {
       .from(employees)
       .leftJoin(departments, eq(employees.departmentId, departments.id))
       .leftJoin(branches, eq(employees.branchId, branches.id))
+      .where(eq(employees.orgId, req.orgId))
       .orderBy(sql`${employees.createdAt} DESC`)
       .limit(5);
 

@@ -17,8 +17,12 @@ import Branches from "@/pages/Branches";
 import Employees from "@/pages/Employees";
 import EmployeeProfile from "@/pages/EmployeeProfile";
 import EmployeeForm from "@/pages/EmployeeForm";
+import OrgSetup from "@/pages/OrgSetup";
+import OrgSettings from "@/pages/OrgSettings";
 
 import Layout from "@/components/layout/Layout";
+import { OrgProvider } from "@/context/OrgContext";
+import { useOrg } from "@/hooks/useOrg";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -46,16 +50,16 @@ const clerkAppearance = {
     logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
   },
   variables: {
-    colorPrimary: "hsl(222, 47%, 11%)",
-    colorForeground: "hsl(222, 47%, 11%)",
-    colorMutedForeground: "hsl(215.4, 16.3%, 46.9%)",
+    colorPrimary: "hsl(243, 75%, 59%)",
+    colorForeground: "hsl(240, 30%, 10%)",
+    colorMutedForeground: "hsl(228, 15%, 50%)",
     colorDanger: "hsl(0, 84.2%, 60.2%)",
     colorBackground: "hsl(0, 0%, 100%)",
     colorInput: "hsl(0, 0%, 100%)",
-    colorInputForeground: "hsl(222, 47%, 11%)",
-    colorNeutral: "hsl(214, 32%, 91%)",
+    colorInputForeground: "hsl(240, 30%, 10%)",
+    colorNeutral: "hsl(228, 28%, 89%)",
     fontFamily: "Inter, sans-serif",
-    borderRadius: "0.375rem",
+    borderRadius: "0.5rem",
   },
   elements: {
     rootBox: "w-full flex justify-center",
@@ -86,9 +90,20 @@ const clerkAppearance = {
   },
 };
 
+function LoadingScreen() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[#f4f5fb]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 animate-pulse" />
+        <p className="text-sm text-slate-400 animate-pulse">Loading your workspace…</p>
+      </div>
+    </div>
+  );
+}
+
 function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5fb] px-4">
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
@@ -96,7 +111,7 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f5fb] px-4">
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
     </div>
   );
@@ -115,13 +130,27 @@ function HomeRedirect() {
   );
 }
 
+function OrgSetupGuard() {
+  const { org, isOrgLoading } = useOrg();
+  if (isOrgLoading) return <LoadingScreen />;
+  if (org) return <Redirect to="/dashboard" />;
+  return <OrgSetup />;
+}
+
 function ProtectedRoute({ component: Component, ...rest }: any) {
+  const { org, isOrgLoading, needsSetup } = useOrg();
   return (
     <Route {...rest}>
       <Show when="signed-in">
-        <Layout>
-          <Component />
-        </Layout>
+        {isOrgLoading ? (
+          <LoadingScreen />
+        ) : needsSetup ? (
+          <Redirect to="/org-setup" />
+        ) : (
+          <Layout>
+            <Component />
+          </Layout>
+        )}
       </Show>
       <Show when="signed-out">
         <Redirect to="/" />
@@ -165,8 +194,14 @@ function ClerkProviderWithRoutes() {
       localization={{
         signIn: {
           start: {
-            title: "Talanta EMS Sign In",
-            subtitle: "Access the Employee Management System",
+            title: "Welcome back",
+            subtitle: "Sign in to your workspace",
+          },
+        },
+        signUp: {
+          start: {
+            title: "Create your account",
+            subtitle: "Get started with Talanta EMS",
           },
         },
       }}
@@ -175,24 +210,38 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
-        <TooltipProvider>
-          <Switch>
-            <Route path="/" component={HomeRedirect} />
-            <Route path="/sign-in/*?" component={SignInPage} />
-            <Route path="/sign-up/*?" component={SignUpPage} />
-            
-            <ProtectedRoute path="/dashboard" component={Dashboard} />
-            <ProtectedRoute path="/employees" component={Employees} />
-            <ProtectedRoute path="/employees/new" component={EmployeeForm} />
-            <ProtectedRoute path="/employees/:id" component={EmployeeProfile} />
-            <ProtectedRoute path="/employees/:id/edit" component={EmployeeForm} />
-            <ProtectedRoute path="/departments" component={Departments} />
-            <ProtectedRoute path="/branches" component={Branches} />
-            
-            <Route component={NotFound} />
-          </Switch>
-          <Toaster />
-        </TooltipProvider>
+        <OrgProvider>
+          <TooltipProvider>
+            <Switch>
+              <Route path="/" component={HomeRedirect} />
+              <Route path="/sign-in/*?" component={SignInPage} />
+              <Route path="/sign-up/*?" component={SignUpPage} />
+
+              {/* Org setup — signed in but no org yet */}
+              <Route path="/org-setup">
+                <Show when="signed-in">
+                  <OrgSetupGuard />
+                </Show>
+                <Show when="signed-out">
+                  <Redirect to="/" />
+                </Show>
+              </Route>
+
+              {/* Protected app routes */}
+              <ProtectedRoute path="/dashboard" component={Dashboard} />
+              <ProtectedRoute path="/employees" component={Employees} />
+              <ProtectedRoute path="/employees/new" component={EmployeeForm} />
+              <ProtectedRoute path="/employees/:id" component={EmployeeProfile} />
+              <ProtectedRoute path="/employees/:id/edit" component={EmployeeForm} />
+              <ProtectedRoute path="/departments" component={Departments} />
+              <ProtectedRoute path="/branches" component={Branches} />
+              <ProtectedRoute path="/settings" component={OrgSettings} />
+
+              <Route component={NotFound} />
+            </Switch>
+            <Toaster />
+          </TooltipProvider>
+        </OrgProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );
