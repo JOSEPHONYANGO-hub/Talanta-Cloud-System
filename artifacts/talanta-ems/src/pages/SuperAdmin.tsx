@@ -1,31 +1,27 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { useSuperAdminStats, useSuperAdminOrgs, useDeleteOrgAdmin, type OrgWithStats } from "@/hooks/useSuperAdmin";
+import {
+  useSuperAdminStats, useSuperAdminOrgs, useDeleteOrgAdmin, useCreateOrgAdmin,
+  type OrgWithStats, type CreateOrgAdminInput,
+} from "@/hooks/useSuperAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
   Building2, Users, Briefcase, LayoutDashboard,
-  Search, ExternalLink, Trash2, Eye, ShieldCheck,
+  Search, Trash2, Eye, ShieldCheck, Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -51,17 +47,31 @@ function StatCard({ title, value, icon: Icon, color }: {
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short", day: "numeric", year: "numeric",
-  });
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function slugify(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 50);
 }
 
 export default function SuperAdmin() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<OrgWithStats | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+
+  const [form, setForm] = useState<CreateOrgAdminInput>({
+    name: "",
+    slug: "",
+    industry: "",
+    primaryColor: "#6366f1",
+    accentColor: "#10b981",
+    ownerEmail: "",
+  });
+
   const { data: stats, isLoading: statsLoading } = useSuperAdminStats();
   const { data: orgs, isLoading: orgsLoading } = useSuperAdminOrgs();
   const deleteMutation = useDeleteOrgAdmin();
+  const createMutation = useCreateOrgAdmin();
 
   const filtered = (orgs ?? []).filter(
     (o) =>
@@ -69,6 +79,35 @@ export default function SuperAdmin() {
       o.slug.toLowerCase().includes(search.toLowerCase()) ||
       (o.industry ?? "").toLowerCase().includes(search.toLowerCase()),
   );
+
+  function handleFormChange(field: keyof CreateOrgAdminInput, value: string) {
+    setForm((prev) => {
+      const updated = { ...prev, [field]: value };
+      if (field === "name" && !prev.slug) {
+        updated.slug = slugify(value);
+      }
+      return updated;
+    });
+  }
+
+  async function handleCreate() {
+    if (!form.name.trim() || !form.ownerEmail.trim()) return;
+    try {
+      const org = await createMutation.mutateAsync({
+        name: form.name.trim(),
+        slug: form.slug || slugify(form.name),
+        industry: form.industry || undefined,
+        primaryColor: form.primaryColor,
+        accentColor: form.accentColor,
+        ownerEmail: form.ownerEmail.trim(),
+      });
+      toast.success(`"${org.name}" created and assigned to ${org.ownerEmail ?? form.ownerEmail}`);
+      setShowCreate(false);
+      setForm({ name: "", slug: "", industry: "", primaryColor: "#6366f1", accentColor: "#10b981", ownerEmail: "" });
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to create organization");
+    }
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -92,9 +131,15 @@ export default function SuperAdmin() {
           </div>
           <p className="text-sm text-slate-500">Manage all organizations on Talanta-Cloud EMS</p>
         </div>
-        <Badge variant="outline" className="border-rose-200 text-rose-600 bg-rose-50 text-xs font-semibold px-3 py-1">
-          System Admin
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Organization
+          </Button>
+          <Badge variant="outline" className="border-rose-200 text-rose-600 bg-rose-50 text-xs font-semibold px-3 py-1">
+            System Admin
+          </Badge>
+        </div>
       </div>
 
       {/* Stats */}
@@ -131,9 +176,7 @@ export default function SuperAdmin() {
           <div className="flex items-center justify-between gap-4">
             <CardTitle className="text-base font-semibold text-slate-900">
               All Organizations
-              {orgs && (
-                <span className="ml-2 text-xs font-normal text-slate-400">({orgs.length})</span>
-              )}
+              {orgs && <span className="ml-2 text-xs font-normal text-slate-400">({orgs.length})</span>}
             </CardTitle>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -194,9 +237,7 @@ export default function SuperAdmin() {
                       </TableCell>
                       <TableCell>
                         {org.industry ? (
-                          <Badge variant="secondary" className="text-xs font-medium">
-                            {org.industry}
-                          </Badge>
+                          <Badge variant="secondary" className="text-xs font-medium">{org.industry}</Badge>
                         ) : (
                           <span className="text-xs text-slate-300">—</span>
                         )}
@@ -213,8 +254,7 @@ export default function SuperAdmin() {
                       <TableCell className="pr-6">
                         <div className="flex items-center justify-end gap-1">
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="ghost" size="sm"
                             className="h-7 w-7 p-0 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50"
                             asChild
                           >
@@ -223,8 +263,7 @@ export default function SuperAdmin() {
                             </Link>
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="ghost" size="sm"
                             className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 hover:bg-rose-50"
                             onClick={() => setDeleteTarget(org)}
                           >
@@ -241,15 +280,117 @@ export default function SuperAdmin() {
         </CardContent>
       </Card>
 
+      {/* Create organization dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-rose-500" />
+              Create New Organization
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="org-name">Organization Name <span className="text-rose-500">*</span></Label>
+                <Input
+                  id="org-name"
+                  placeholder="Acme Corp"
+                  value={form.name}
+                  onChange={(e) => handleFormChange("name", e.target.value)}
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-slug">Workspace URL</Label>
+                <div className="flex items-center">
+                  <span className="text-xs text-slate-400 mr-1">/</span>
+                  <Input
+                    id="org-slug"
+                    placeholder="acme-corp"
+                    value={form.slug}
+                    onChange={(e) => handleFormChange("slug", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-industry">Industry</Label>
+                <Input
+                  id="org-industry"
+                  placeholder="Technology"
+                  value={form.industry}
+                  onChange={(e) => handleFormChange("industry", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-primary">Primary Color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="org-primary"
+                    value={form.primaryColor}
+                    onChange={(e) => handleFormChange("primaryColor", e.target.value)}
+                    className="h-9 w-14 rounded border border-input cursor-pointer"
+                  />
+                  <Input
+                    value={form.primaryColor}
+                    onChange={(e) => handleFormChange("primaryColor", e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="org-accent">Accent Color</Label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    id="org-accent"
+                    value={form.accentColor}
+                    onChange={(e) => handleFormChange("accentColor", e.target.value)}
+                    className="h-9 w-14 rounded border border-input cursor-pointer"
+                  />
+                  <Input
+                    value={form.accentColor}
+                    onChange={(e) => handleFormChange("accentColor", e.target.value)}
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </div>
+              <div className="col-span-2 space-y-2">
+                <Label htmlFor="owner-email">Owner Email <span className="text-rose-500">*</span></Label>
+                <Input
+                  id="owner-email"
+                  type="email"
+                  placeholder="owner@company.com"
+                  value={form.ownerEmail}
+                  onChange={(e) => handleFormChange("ownerEmail", e.target.value)}
+                />
+                <p className="text-xs text-slate-400">
+                  The person must have a Talanta account. They'll be set as the org owner.
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button
+              onClick={handleCreate}
+              disabled={createMutation.isPending || !form.name.trim() || !form.ownerEmail.trim()}
+            >
+              {createMutation.isPending ? "Creating…" : "Create Organization"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the organization, all its employees (
-              {deleteTarget?.employeeCount}), departments, branches, and member records.
-              This action cannot be undone.
+              This will permanently delete the organization, all its employees ({deleteTarget?.employeeCount}),
+              departments, branches, and member records. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

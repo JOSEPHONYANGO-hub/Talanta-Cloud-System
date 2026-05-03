@@ -8,10 +8,12 @@ import aiRouter from "./ai";
 import storageRouter from "./storage";
 import organizationsRouter from "./organizations";
 import superAdminRouter from "./superAdmin";
+import membersRouter from "./members";
 
 const router: IRouter = Router();
 
 router.use(superAdminRouter);
+router.use(membersRouter);
 router.use(organizationsRouter);
 router.use(healthRouter);
 router.use(employeesRouter);

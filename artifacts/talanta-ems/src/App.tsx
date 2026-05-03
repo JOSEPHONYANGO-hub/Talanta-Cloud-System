@@ -20,6 +20,7 @@ import EmployeeForm from "@/pages/EmployeeForm";
 import OrgSetup from "@/pages/OrgSetup";
 import OrgSettings from "@/pages/OrgSettings";
 import OrgAdmin from "@/pages/OrgAdmin";
+import Members from "@/pages/Members";
 import SuperAdmin from "@/pages/SuperAdmin";
 import SuperAdminOrgDetail from "@/pages/SuperAdminOrgDetail";
 
@@ -261,6 +262,7 @@ function ClerkProviderWithRoutes() {
               {/* Protected org-level routes */}
               <ProtectedRoute path="/dashboard" component={Dashboard} />
               <ProtectedRoute path="/admin" component={OrgAdmin} />
+              <ProtectedRoute path="/members" component={Members} />
               <ProtectedRoute path="/employees" component={Employees} />
               <ProtectedRoute path="/employees/new" component={EmployeeForm} />
               <ProtectedRoute path="/employees/:id" component={EmployeeProfile} />

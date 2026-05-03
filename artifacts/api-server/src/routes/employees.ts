@@ -11,10 +11,11 @@ import {
   DeleteEmployeeParams,
 } from "@workspace/api-zod";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireRole } from "../middlewares/requireRole";
 
 const router = Router();
 
-router.patch("/employees/bulk-status", requireOrg, async (req, res) => {
+router.patch("/employees/bulk-status", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const { ids, status } = req.body ?? {};
     if (
@@ -149,7 +150,7 @@ router.get("/employees", requireOrg, async (req, res) => {
   }
 });
 
-router.post("/employees", requireOrg, async (req, res) => {
+router.post("/employees", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const body = CreateEmployeeBody.safeParse(req.body);
     if (!body.success) {
@@ -212,7 +213,7 @@ router.get("/employees/:id", requireOrg, async (req, res) => {
   }
 });
 
-router.put("/employees/:id", requireOrg, async (req, res) => {
+router.put("/employees/:id", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const params = UpdateEmployeeParams.safeParse({ id: req.params.id });
     if (!params.success) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -241,7 +242,7 @@ router.put("/employees/:id", requireOrg, async (req, res) => {
   }
 });
 
-router.delete("/employees/:id", requireOrg, async (req, res) => {
+router.delete("/employees/:id", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const params = DeleteEmployeeParams.safeParse({ id: req.params.id });
     if (!params.success) { res.status(400).json({ error: "Invalid ID" }); return; }

@@ -9,6 +9,7 @@ import {
   DeleteDepartmentParams,
 } from "@workspace/api-zod";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireRole } from "../middlewares/requireRole";
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get("/departments", requireOrg, async (req, res) => {
   }
 });
 
-router.post("/departments", requireOrg, async (req, res) => {
+router.post("/departments", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const body = CreateDepartmentBody.safeParse(req.body);
     if (!body.success) {
@@ -52,7 +53,7 @@ router.post("/departments", requireOrg, async (req, res) => {
   }
 });
 
-router.put("/departments/:id", requireOrg, async (req, res) => {
+router.put("/departments/:id", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const params = UpdateDepartmentParams.safeParse({ id: req.params.id });
     if (!params.success) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -79,7 +80,7 @@ router.put("/departments/:id", requireOrg, async (req, res) => {
   }
 });
 
-router.delete("/departments/:id", requireOrg, async (req, res) => {
+router.delete("/departments/:id", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const params = DeleteDepartmentParams.safeParse({ id: req.params.id });
     if (!params.success) { res.status(400).json({ error: "Invalid ID" }); return; }

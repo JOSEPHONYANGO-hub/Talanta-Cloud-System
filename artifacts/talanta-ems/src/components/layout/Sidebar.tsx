@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import {
   LayoutDashboard, Users, Building2, MapPin, LogOut,
-  Menu, ChevronRight, Settings2, ShieldCheck, ShieldAlert,
+  Menu, ChevronRight, Settings2, ShieldCheck, ShieldAlert, UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,58 @@ const navigation = [
   { name: "Departments", href: "/departments", icon: Building2 },
   { name: "Branches", href: "/branches", icon: MapPin },
 ];
+
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  isActive,
+  onClick,
+  variant = "default",
+  testId,
+}: {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  isActive: boolean;
+  onClick?: () => void;
+  variant?: "default" | "danger";
+  testId?: string;
+}) {
+  const activeStyle =
+    variant === "danger"
+      ? "bg-rose-500/20 text-rose-300 shadow-sm"
+      : "bg-white/15 text-white shadow-sm";
+  const inactiveStyle =
+    variant === "danger"
+      ? "text-indigo-200/50 hover:bg-rose-500/10 hover:text-rose-300"
+      : "text-indigo-200/70 hover:bg-white/8 hover:text-white";
+  const activeIconStyle = variant === "danger" ? "text-rose-300" : "text-white";
+  const inactiveIconStyle =
+    variant === "danger"
+      ? "text-rose-400/50 group-hover:text-rose-400"
+      : "text-indigo-300/60 group-hover:text-indigo-200";
+  const activePip = variant === "danger" ? "bg-rose-400" : "bg-indigo-300";
+
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      data-testid={testId}
+      className={cn(
+        "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative",
+        isActive ? activeStyle : inactiveStyle,
+      )}
+    >
+      {isActive && (
+        <span className={cn("absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full", activePip)} />
+      )}
+      <Icon className={cn("mr-3 h-4 w-4 flex-shrink-0 transition-colors", isActive ? activeIconStyle : inactiveIconStyle)} />
+      <span className="flex-1">{label}</span>
+      {isActive && variant !== "danger" && <ChevronRight className="h-3.5 w-3.5 text-indigo-300/60" />}
+    </Link>
+  );
+}
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -41,30 +93,15 @@ export function Sidebar() {
           location === item.href ||
           (item.href !== "/dashboard" && location.startsWith(item.href));
         return (
-          <Link
+          <NavLink
             key={item.name}
             href={item.href}
+            icon={item.icon}
+            label={item.name}
+            isActive={isActive}
             onClick={onLinkClick}
-            className={cn(
-              "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative",
-              isActive
-                ? "bg-white/15 text-white shadow-sm"
-                : "text-indigo-200/70 hover:bg-white/8 hover:text-white"
-            )}
-            data-testid={`link-${item.name.toLowerCase()}`}
-          >
-            {isActive && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-300 rounded-full" />
-            )}
-            <item.icon
-              className={cn(
-                "mr-3 h-4 w-4 flex-shrink-0 transition-colors",
-                isActive ? "text-white" : "text-indigo-300/60 group-hover:text-indigo-200"
-              )}
-            />
-            <span className="flex-1">{item.name}</span>
-            {isActive && <ChevronRight className="h-3.5 w-3.5 text-indigo-300/60" />}
-          </Link>
+            testId={`link-${item.name.toLowerCase()}`}
+          />
         );
       })}
 
@@ -72,71 +109,43 @@ export function Sidebar() {
       <div className="pt-3 mt-3 border-t border-white/10">
         <p className="px-3 pb-2 text-[9px] font-semibold text-indigo-300/30 uppercase tracking-widest">Admin</p>
 
-        <Link
+        <NavLink
           href="/admin"
+          icon={ShieldCheck}
+          label="Org Admin Hub"
+          isActive={location === "/admin"}
           onClick={onLinkClick}
-          className={cn(
-            "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative",
-            location === "/admin"
-              ? "bg-white/15 text-white shadow-sm"
-              : "text-indigo-200/70 hover:bg-white/8 hover:text-white"
-          )}
-          data-testid="link-admin"
-        >
-          {location === "/admin" && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-300 rounded-full" />
-          )}
-          <ShieldCheck className={cn(
-            "mr-3 h-4 w-4 flex-shrink-0",
-            location === "/admin" ? "text-white" : "text-indigo-300/60 group-hover:text-indigo-200"
-          )} />
-          <span className="flex-1">Org Admin Hub</span>
-          {location === "/admin" && <ChevronRight className="h-3.5 w-3.5 text-indigo-300/60" />}
-        </Link>
+          testId="link-admin"
+        />
 
-        <Link
+        <NavLink
+          href="/members"
+          icon={UserCog}
+          label="Team Members"
+          isActive={location === "/members"}
+          onClick={onLinkClick}
+          testId="link-members"
+        />
+
+        <NavLink
           href="/settings"
+          icon={Settings2}
+          label="Settings"
+          isActive={location === "/settings"}
           onClick={onLinkClick}
-          className={cn(
-            "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative",
-            location === "/settings"
-              ? "bg-white/15 text-white shadow-sm"
-              : "text-indigo-200/70 hover:bg-white/8 hover:text-white"
-          )}
-          data-testid="link-settings"
-        >
-          {location === "/settings" && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-300 rounded-full" />
-          )}
-          <Settings2 className={cn(
-            "mr-3 h-4 w-4 flex-shrink-0",
-            location === "/settings" ? "text-white" : "text-indigo-300/60 group-hover:text-indigo-200"
-          )} />
-          <span className="flex-1">Settings</span>
-        </Link>
+          testId="link-settings"
+        />
 
-        {/* Super admin link — only visible to super admins */}
         {adminCheck?.isSuperAdmin && (
-          <Link
+          <NavLink
             href="/super-admin"
+            icon={ShieldAlert}
+            label="Super Admin"
+            isActive={location.startsWith("/super-admin")}
             onClick={onLinkClick}
-            className={cn(
-              "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative mt-0.5",
-              location.startsWith("/super-admin")
-                ? "bg-rose-500/20 text-rose-300 shadow-sm"
-                : "text-indigo-200/50 hover:bg-rose-500/10 hover:text-rose-300"
-            )}
-            data-testid="link-super-admin"
-          >
-            {location.startsWith("/super-admin") && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-rose-400 rounded-full" />
-            )}
-            <ShieldAlert className={cn(
-              "mr-3 h-4 w-4 flex-shrink-0",
-              location.startsWith("/super-admin") ? "text-rose-300" : "text-rose-400/50 group-hover:text-rose-400"
-            )} />
-            <span className="flex-1">Super Admin</span>
-          </Link>
+            variant="danger"
+            testId="link-super-admin"
+          />
         )}
       </div>
     </nav>

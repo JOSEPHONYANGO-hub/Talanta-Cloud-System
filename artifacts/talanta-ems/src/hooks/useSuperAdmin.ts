@@ -24,7 +24,15 @@ export interface OrgWithStats {
 }
 
 export interface OrgDetailAdmin extends OrgWithStats {
-  members: { id: number; userId: string; role: string; joinedAt: string }[];
+  members: {
+    id: number;
+    userId: string;
+    role: string;
+    joinedAt: string;
+    email: string | null;
+    fullName: string | null;
+    imageUrl: string | null;
+  }[];
   departmentCount: number;
   branchCount: number;
   recentEmployees: {
@@ -34,6 +42,16 @@ export interface OrgDetailAdmin extends OrgWithStats {
     status: string;
     createdAt: string;
   }[];
+}
+
+export interface CreateOrgAdminInput {
+  name: string;
+  slug?: string;
+  industry?: string;
+  primaryColor?: string;
+  accentColor?: string;
+  logoUrl?: string;
+  ownerEmail: string;
 }
 
 async function authFetch(url: string, getToken: () => Promise<string | null>, options?: RequestInit) {
@@ -98,6 +116,21 @@ export function useDeleteOrgAdmin() {
   return useMutation<{ success: boolean; deleted: { id: number; name: string } }, Error, number>({
     mutationFn: (orgId) =>
       authFetch(`/api/super-admin/organizations/${orgId}`, getToken, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["super-admin"] });
+    },
+  });
+}
+
+export function useCreateOrgAdmin() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation<OrgWithStats & { ownerEmail: string | null; ownerName: string | null }, Error, CreateOrgAdminInput>({
+    mutationFn: (data) =>
+      authFetch("/api/super-admin/organizations", getToken, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["super-admin"] });
     },

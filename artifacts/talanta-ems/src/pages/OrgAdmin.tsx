@@ -2,12 +2,13 @@ import { Link } from "wouter";
 import { useOrg } from "@/hooks/useOrg";
 import { useAuth } from "@clerk/react";
 import { useQuery } from "@tanstack/react-query";
+import { useOrgMembers } from "@/hooks/useMembers";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Users, Building2, MapPin, Settings2, Plus, ArrowRight,
-  BarChart3, ShieldCheck,
+  BarChart3, ShieldCheck, UserCog, Crown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,54 +35,54 @@ function useDashboardStats() {
   });
 }
 
-interface ManageCard {
-  title: string;
-  description: string;
-  href: string;
-  addHref?: string;
-  icon: React.ElementType;
-  color: string;
-  countKey?: keyof DashboardStats;
-}
-
-const cards: ManageCard[] = [
-  {
-    title: "Employees",
-    description: "Add, edit, and manage all employee records, profiles, and job info.",
-    href: "/employees",
-    addHref: "/employees/new",
-    icon: Users,
-    color: "bg-indigo-500",
-    countKey: "totalEmployees",
-  },
-  {
-    title: "Departments",
-    description: "Organize your company structure with departments and assign teams.",
-    href: "/departments",
-    icon: Building2,
-    color: "bg-violet-500",
-    countKey: "totalDepartments",
-  },
-  {
-    title: "Branches",
-    description: "Manage office locations and assign employees to branches.",
-    href: "/branches",
-    icon: MapPin,
-    color: "bg-emerald-500",
-    countKey: "totalBranches",
-  },
-  {
-    title: "Org Settings",
-    description: "Update your organization profile, logo, and brand colors.",
-    href: "/settings",
-    icon: Settings2,
-    color: "bg-amber-500",
-  },
-];
-
 export default function OrgAdmin() {
   const { org } = useOrg();
   const { data: stats } = useDashboardStats();
+  const { data: members } = useOrgMembers();
+
+  const cards = [
+    {
+      title: "Employees",
+      description: "Add, edit, and manage all employee records, profiles, and job info.",
+      href: "/employees",
+      addHref: "/employees/new",
+      icon: Users,
+      color: "bg-indigo-500",
+      count: stats?.totalEmployees,
+    },
+    {
+      title: "Departments",
+      description: "Organize your company structure with departments and assign teams.",
+      href: "/departments",
+      icon: Building2,
+      color: "bg-violet-500",
+      count: stats?.totalDepartments,
+    },
+    {
+      title: "Branches",
+      description: "Manage office locations and assign employees to branches.",
+      href: "/branches",
+      icon: MapPin,
+      color: "bg-emerald-500",
+      count: stats?.totalBranches,
+    },
+    {
+      title: "Team Members",
+      description: "Invite colleagues, assign roles (owner, admin, member), and control access.",
+      href: "/members",
+      icon: UserCog,
+      color: "bg-sky-500",
+      count: members?.length,
+    },
+    {
+      title: "Org Settings",
+      description: "Update your organization profile, logo, and brand colors.",
+      href: "/settings",
+      icon: Settings2,
+      color: "bg-amber-500",
+      count: undefined,
+    },
+  ];
 
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">
@@ -93,7 +94,7 @@ export default function OrgAdmin() {
             <h1 className="text-2xl font-bold text-slate-900">Admin Hub</h1>
           </div>
           <p className="text-sm text-slate-500">
-            Manage <span className="font-semibold text-slate-700">{org?.name ?? "your organization"}</span> — employees, structure, and settings.
+            Manage <span className="font-semibold text-slate-700">{org?.name ?? "your organization"}</span> — employees, structure, access, and settings.
           </p>
         </div>
         <Button variant="outline" size="sm" asChild>
@@ -111,7 +112,7 @@ export default function OrgAdmin() {
             { label: "Total Employees", value: stats.totalEmployees, color: "text-indigo-600" },
             { label: "Active", value: stats.activeEmployees, color: "text-emerald-600" },
             { label: "Departments", value: stats.totalDepartments, color: "text-violet-600" },
-            { label: "Branches", value: stats.totalBranches, color: "text-amber-600" },
+            { label: "Team Members", value: members?.length ?? "—", color: "text-sky-600" },
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-xl border border-slate-100 p-4 shadow-sm">
               <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
@@ -135,9 +136,9 @@ export default function OrgAdmin() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <h3 className="text-sm font-semibold text-slate-900">{card.title}</h3>
-                      {card.countKey && stats && (
+                      {card.count !== undefined && (
                         <Badge variant="secondary" className="text-xs font-semibold">
-                          {stats[card.countKey]}
+                          {card.count}
                         </Badge>
                       )}
                     </div>
@@ -148,7 +149,7 @@ export default function OrgAdmin() {
                           Manage <ArrowRight className="ml-1 h-3 w-3" />
                         </Link>
                       </Button>
-                      {card.addHref && (
+                      {"addHref" in card && card.addHref && (
                         <Button size="sm" className="h-7 text-xs" asChild>
                           <Link href={card.addHref}>
                             <Plus className="mr-1 h-3 w-3" /> Add New
@@ -201,6 +202,26 @@ export default function OrgAdmin() {
           </div>
         </div>
       )}
+
+      {/* Access roles legend */}
+      <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-5">
+        <h2 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
+          <Crown className="h-4 w-4 text-amber-500" />
+          Permission Levels
+        </h2>
+        <div className="space-y-2.5">
+          {[
+            { role: "Owner", color: "bg-amber-50 border-amber-200 text-amber-700", desc: "Full control — can manage everything including member roles and org settings" },
+            { role: "Admin", color: "bg-indigo-50 border-indigo-200 text-indigo-700", desc: "Can add/remove members, and create/edit/delete employees, departments, branches" },
+            { role: "Member", color: "bg-slate-50 border-slate-200 text-slate-600", desc: "Read-only access — can view all data but cannot make changes" },
+          ].map((r) => (
+            <div key={r.role} className="flex items-center gap-3">
+              <Badge variant="outline" className={cn("text-xs font-semibold w-16 justify-center shrink-0", r.color)}>{r.role}</Badge>
+              <p className="text-xs text-slate-500">{r.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

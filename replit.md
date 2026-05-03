@@ -75,15 +75,26 @@ This project is the **Talanta-Cloud Solutions Employee Management System (EMS)**
 - `POST /api/organizations` — create org + add creator as owner member
 - `PUT /api/organizations/me` — update org settings (requireOrg)
 
+### Member management (requireOrg, role-gated)
+- `GET /api/members` — list org members, enriched with Clerk user info (email, name, avatar)
+- `POST /api/members` — add member by email (Clerk lookup); requires admin+; role: admin|member
+- `PATCH /api/members/:userId` — change member role; requires owner only
+- `DELETE /api/members/:userId` — remove member; requires admin+; can't remove owner or self
+
 ### Data routes (all require requireOrg middleware)
-- `GET/POST /api/employees` — list/create employees (org-scoped)
-- `GET/PUT/DELETE /api/employees/:id` — read/update/delete employee (org-scoped)
-- `PATCH /api/employees/bulk-status` — bulk status update (org-scoped)
-- `GET /api/employees/export` — CSV export (org-scoped)
-- `GET/POST /api/departments` — list/create (org-scoped)
-- `PUT/DELETE /api/departments/:id` — update/delete (org-scoped)
-- `GET/POST /api/branches` — list/create (org-scoped)
-- `PUT/DELETE /api/branches/:id` — update/delete (org-scoped)
+- `GET /api/employees` — list employees (org-scoped, any member)
+- `POST /api/employees` — create employee (requires admin+)
+- `GET /api/employees/:id` — read employee (any member)
+- `PUT /api/employees/:id` — update employee (requires admin+)
+- `DELETE /api/employees/:id` — delete employee (requires admin+)
+- `PATCH /api/employees/bulk-status` — bulk status update (requires admin+)
+- `GET /api/employees/export` — CSV export (any member)
+- `GET /api/departments` — list (any member)
+- `POST /api/departments` — create (requires admin+)
+- `PUT/DELETE /api/departments/:id` — update/delete (requires admin+)
+- `GET /api/branches` — list (any member)
+- `POST /api/branches` — create (requires admin+)
+- `PUT/DELETE /api/branches/:id` — update/delete (requires admin+)
 - `GET /api/dashboard/stats` — aggregated stats (org-scoped)
 - `GET /api/dashboard/employees-by-department` — chart data (org-scoped)
 - `GET /api/dashboard/employees-by-branch` — chart data (org-scoped)
@@ -109,16 +120,36 @@ This project is the **Talanta-Cloud Solutions Employee Management System (EMS)**
 - `GET /api/super-admin/check` — returns `{ isSuperAdmin, userId }` (no guard, helps with setup)
 - `GET /api/super-admin/stats` — global totals (orgs, employees, members, departments)
 - `GET /api/super-admin/organizations` — all orgs with member/employee counts
-- `GET /api/super-admin/organizations/:id` — org detail (members, recent employees, counts)
+- `GET /api/super-admin/organizations/:id` — org detail (members enriched with Clerk info, recent employees, counts)
+- `POST /api/super-admin/organizations` — create org and assign owner by ownerEmail (Clerk lookup)
 - `DELETE /api/super-admin/organizations/:id` — cascade-delete org + all data
 - `PATCH /api/super-admin/organizations/:id` — update org fields
-- Frontend: `SuperAdminLayout` (slate sidebar), `SuperAdmin.tsx` (table + delete), `SuperAdminOrgDetail.tsx`
+- Frontend: `SuperAdminLayout` (slate sidebar), `SuperAdmin.tsx` (table + delete + New Organization dialog), `SuperAdminOrgDetail.tsx`
 - Sidebar shows "Super Admin" link only when `useCheckSuperAdmin()` returns `isSuperAdmin: true`
+
+## Role-Based Permissions
+
+- **`middlewares/requireRole.ts`** — checks `req.orgRole` (set by `requireOrg`) against a minimum level: owner(3) > admin(2) > member(1)
+- `requireRole("admin")` guards all write operations on employees, departments, branches, and member invitations
+- `requireRole("owner")` guards member role changes
+- Members (read-only) can view all data but cannot create/edit/delete anything
+
+## Member Management (`/members`)
+
+- `pages/Members.tsx` — full team management page with role legend, sortable member list
+- Each member shows: Clerk avatar, full name, email, role badge (owner/admin/member), joined date, actions
+- Add member by email (invites existing Clerk users); owner/admin can add
+- Change role via inline dropdown; owner only
+- Remove member with confirmation; admin can remove members; owner can remove admins
+- `hooks/useMembers.ts` — `useOrgMembers`, `useAddMember`, `useUpdateMemberRole`, `useRemoveMember`
+- Sidebar "Team Members" link under Admin section
+- OrgAdmin hub shows Members count in stats banner and Members management card
 
 ## Org Admin Hub (`/admin`)
 
 - Per-org management hub at `/admin` (protected route, requires org)
-- Shows org stats + cards linking to Employees, Departments, Branches, Settings
+- Shows org stats + cards linking to Employees, Departments, Branches, Team Members, Settings
+- Includes Permission Levels legend (owner/admin/member descriptions)
 - Accessible from sidebar under the "Admin" section ("Org Admin Hub" link)
 
 ## Codegen Notes

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { db } from "@workspace/db";
 import { organizations, organizationMembers, employees, departments, branches } from "@workspace/db";
 import { eq, count, desc, isNotNull } from "drizzle-orm";
@@ -75,6 +75,97 @@ router.get("/super-admin/organizations", requireSuperAdmin, async (req, res) => 
   }
 });
 
+router.post("/super-admin/organizations", requireSuperAdmin, async (req, res) => {
+  try {
+    const { name, slug, industry, primaryColor, accentColor, logoUrl, ownerEmail, ownerUserId } = req.body ?? {};
+
+    if (!name || typeof name !== "string" || !name.trim()) {
+      res.status(400).json({ error: "Organization name is required" });
+      return;
+    }
+
+    let ownerId: string;
+    let ownerClerkUser: Awaited<ReturnType<typeof clerkClient.users.getUser>> | undefined;
+
+    if (ownerUserId && typeof ownerUserId === "string") {
+      try {
+        ownerClerkUser = await clerkClient.users.getUser(ownerUserId);
+        ownerId = ownerClerkUser.id;
+      } catch {
+        res.status(404).json({ error: "No Talanta account found for that user ID." });
+        return;
+      }
+    } else if (ownerEmail && typeof ownerEmail === "string") {
+      const users = await clerkClient.users.getUserList({ emailAddress: [ownerEmail.toLowerCase().trim()] });
+      ownerClerkUser = users.data[0];
+      if (!ownerClerkUser) {
+        res.status(404).json({ error: `No Talanta account found for "${ownerEmail}". They must sign up first.` });
+        return;
+      }
+      ownerId = ownerClerkUser.id;
+    } else {
+      res.status(400).json({ error: "Provide ownerEmail or ownerUserId to assign an owner." });
+      return;
+    }
+
+    const finalSlug = (
+      slug || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+    ).slice(0, 50);
+
+    const [slugExists] = await db
+      .select({ id: organizations.id })
+      .from(organizations)
+      .where(eq(organizations.slug, finalSlug))
+      .limit(1);
+
+    if (slugExists) {
+      res.status(409).json({ error: "That workspace URL is already taken." });
+      return;
+    }
+
+    const existingMembership = await db
+      .select()
+      .from(organizationMembers)
+      .where(eq(organizationMembers.userId, ownerId))
+      .limit(1);
+
+    if (existingMembership.length > 0) {
+      res.status(409).json({ error: "This user already belongs to an organization." });
+      return;
+    }
+
+    const [org] = await db
+      .insert(organizations)
+      .values({
+        name: name.trim(),
+        slug: finalSlug,
+        logoUrl: logoUrl ?? null,
+        primaryColor: primaryColor ?? "#6366f1",
+        accentColor: accentColor ?? "#10b981",
+        industry: industry ?? null,
+        ownerId,
+      })
+      .returning();
+
+    await db.insert(organizationMembers).values({
+      orgId: org.id,
+      userId: ownerId,
+      role: "owner",
+    });
+
+    res.status(201).json({
+      ...org,
+      memberCount: 1,
+      employeeCount: 0,
+      ownerEmail: ownerClerkUser?.primaryEmailAddress?.emailAddress ?? null,
+      ownerName: ownerClerkUser?.fullName ?? null,
+    });
+  } catch (err) {
+    req.log.error({ err }, "Failed to create organization");
+    res.status(500).json({ error: "Failed to create organization" });
+  }
+});
+
 router.get("/super-admin/organizations/:id", requireSuperAdmin, async (req, res) => {
   try {
     const orgId = parseInt(req.params.id, 10);
@@ -92,9 +183,25 @@ router.get("/super-admin/organizations/:id", requireSuperAdmin, async (req, res)
 
     if (!org) { res.status(404).json({ error: "Organization not found" }); return; }
 
+    const enrichedMembers = await Promise.all(
+      members.map(async (m) => {
+        try {
+          const user = await clerkClient.users.getUser(m.userId);
+          return {
+            ...m,
+            email: user.primaryEmailAddress?.emailAddress ?? null,
+            fullName: user.fullName ?? null,
+            imageUrl: user.imageUrl ?? null,
+          };
+        } catch {
+          return { ...m, email: null, fullName: null, imageUrl: null };
+        }
+      }),
+    );
+
     res.json({
       ...org,
-      members,
+      members: enrichedMembers,
       employeeCount: Number(empCount?.count ?? 0),
       departmentCount: Number(deptCount?.count ?? 0),
       branchCount: Number(branchCount?.count ?? 0),

@@ -9,6 +9,7 @@ import {
   DeleteBranchParams,
 } from "@workspace/api-zod";
 import { requireOrg } from "../middlewares/requireOrg";
+import { requireRole } from "../middlewares/requireRole";
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get("/branches", requireOrg, async (req, res) => {
   }
 });
 
-router.post("/branches", requireOrg, async (req, res) => {
+router.post("/branches", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const body = CreateBranchBody.safeParse(req.body);
     if (!body.success) {
@@ -52,7 +53,7 @@ router.post("/branches", requireOrg, async (req, res) => {
   }
 });
 
-router.put("/branches/:id", requireOrg, async (req, res) => {
+router.put("/branches/:id", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const params = UpdateBranchParams.safeParse({ id: req.params.id });
     if (!params.success) { res.status(400).json({ error: "Invalid ID" }); return; }
@@ -79,7 +80,7 @@ router.put("/branches/:id", requireOrg, async (req, res) => {
   }
 });
 
-router.delete("/branches/:id", requireOrg, async (req, res) => {
+router.delete("/branches/:id", requireOrg, requireRole("admin"), async (req, res) => {
   try {
     const params = DeleteBranchParams.safeParse({ id: req.params.id });
     if (!params.success) { res.status(400).json({ error: "Invalid ID" }); return; }
