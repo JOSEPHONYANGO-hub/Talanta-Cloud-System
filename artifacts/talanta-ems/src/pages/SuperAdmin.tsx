@@ -58,7 +58,7 @@ export default function SuperAdmin() {
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<OrgWithStats | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [inviteResult, setInviteResult] = useState<{ orgName: string; inviteUrl: string; email: string } | null>(null);
+  const [inviteResult, setInviteResult] = useState<{ orgName: string; inviteUrl: string; email: string; emailSent: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const [form, setForm] = useState<CreateOrgAdminInput>({
@@ -107,7 +107,7 @@ export default function SuperAdmin() {
       const inviteUrl = `${window.location.origin}/accept-invite?token=${org.inviteToken}`;
       setShowCreate(false);
       setForm({ name: "", slug: "", industry: "", primaryColor: "#6366f1", accentColor: "#10b981", ownerEmail: "" });
-      setInviteResult({ orgName: org.name, inviteUrl, email: org.ownerEmail ?? form.ownerEmail });
+      setInviteResult({ orgName: org.name, inviteUrl, email: org.ownerEmail ?? form.ownerEmail, emailSent: org.emailSent });
     } catch (err: any) {
       toast.error(err.message ?? "Failed to create organization");
     }
@@ -334,12 +334,27 @@ export default function SuperAdmin() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-4 text-sm text-indigo-800">
-              <p className="font-semibold mb-1">"{inviteResult?.orgName}" is ready!</p>
-              <p className="text-indigo-600 text-xs">
-                Share the link below with <span className="font-medium">{inviteResult?.email}</span>. When they open it and sign in, they'll automatically join as the org owner.
-              </p>
-            </div>
+            {inviteResult?.emailSent ? (
+              <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-4 text-sm text-emerald-800 flex items-start gap-3">
+                <CheckCheck className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold mb-0.5">Email sent to {inviteResult.email}!</p>
+                  <p className="text-emerald-700 text-xs">
+                    They'll receive a link to join <strong>{inviteResult.orgName}</strong> as owner. You can also share the link below directly.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-amber-50 border border-amber-100 p-4 text-sm text-amber-800 flex items-start gap-3">
+                <Mail className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold mb-0.5">Email could not be sent automatically</p>
+                  <p className="text-amber-700 text-xs">
+                    Copy the invite link below and share it with <strong>{inviteResult?.email}</strong> manually.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Invite Link (valid for 7 days)</Label>
               <div className="flex items-center gap-2">

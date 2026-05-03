@@ -125,7 +125,7 @@ export function useDeleteOrgAdmin() {
 export function useCreateOrgAdmin() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation<OrgWithStats & { ownerEmail: string | null; ownerName: string | null; inviteToken: string }, Error, CreateOrgAdminInput>({
+  return useMutation<OrgWithStats & { ownerEmail: string | null; ownerName: string | null; inviteToken: string; emailSent: boolean }, Error, CreateOrgAdminInput>({
     mutationFn: (data) =>
       authFetch("/api/super-admin/organizations", getToken, {
         method: "POST",

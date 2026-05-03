@@ -5,6 +5,7 @@ import { db } from "@workspace/db";
 import { organizations, organizationMembers, employees, departments, branches, orgInvitations } from "@workspace/db";
 import { eq, count, desc, isNotNull } from "drizzle-orm";
 import { requireSuperAdmin } from "../middlewares/requireSuperAdmin";
+import { sendOrgInviteEmail } from "../lib/email";
 
 const router = Router();
 
@@ -130,12 +131,31 @@ router.post("/super-admin/organizations", requireSuperAdmin, async (req, res) =>
       expiresAt,
     });
 
+    const appDomain = (process.env.REPLIT_DOMAINS ?? "").split(",")[0]?.trim();
+    const inviteUrl = appDomain
+      ? `https://${appDomain}/accept-invite?token=${token}`
+      : `http://localhost:80/accept-invite?token=${token}`;
+
+    let emailSent = false;
+    try {
+      await sendOrgInviteEmail({
+        to: ownerEmail.trim().toLowerCase(),
+        orgName: org.name,
+        inviteUrl,
+        role: "owner",
+      });
+      emailSent = true;
+    } catch (emailErr) {
+      req.log.warn({ emailErr }, "Failed to send invite email; returning token for manual sharing");
+    }
+
     res.status(201).json({
       ...org,
       memberCount: 0,
       employeeCount: 0,
       ownerEmail: ownerEmail.trim().toLowerCase(),
       inviteToken: token,
+      emailSent,
     });
   } catch (err) {
     req.log.error({ err }, "Failed to create organization");
@@ -169,7 +189,25 @@ router.post("/super-admin/organizations/:id/invite", requireSuperAdmin, async (r
       expiresAt,
     }).returning();
 
-    res.status(201).json({ ...invite, orgName: org.name });
+    const appDomain = (process.env.REPLIT_DOMAINS ?? "").split(",")[0]?.trim();
+    const inviteUrl = appDomain
+      ? `https://${appDomain}/accept-invite?token=${token}`
+      : `http://localhost:80/accept-invite?token=${token}`;
+
+    let emailSent = false;
+    try {
+      await sendOrgInviteEmail({
+        to: email.trim().toLowerCase(),
+        orgName: org.name,
+        inviteUrl,
+        role: (role as string) ?? "admin",
+      });
+      emailSent = true;
+    } catch (emailErr) {
+      req.log.warn({ emailErr }, "Failed to send invite email");
+    }
+
+    res.status(201).json({ ...invite, orgName: org.name, inviteUrl, emailSent });
   } catch (err) {
     req.log.error({ err }, "Failed to create invite");
     res.status(500).json({ error: "Failed to create invite" });
