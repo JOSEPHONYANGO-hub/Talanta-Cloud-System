@@ -80,7 +80,7 @@ export default function EmployeeForm() {
   const { data: branches, isLoading: isLoadingBranches } = useListBranches();
   
   const { data: employee, isLoading: isLoadingEmp } = useGetEmployee(empId, {
-    query: { enabled: isEditing && !isNaN(empId) }
+    query: { enabled: isEditing && !isNaN(empId), queryKey: ["employee", empId] }
   });
 
   const form = useForm<EmployeeFormValues>({
@@ -115,7 +115,7 @@ export default function EmployeeForm() {
 
   const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
-      setPhotoUrl(response.objectPath);
+      setPhotoUrl(response.objectPath.startsWith("/api") ? response.objectPath : `/api${response.objectPath}`);
       toast({ title: "Photo uploaded successfully." });
     },
     onError: (err) => {
@@ -139,17 +139,10 @@ export default function EmployeeForm() {
     }
 
     try {
-      await uploadFile(file, {
-        requestUploadUrl: async (f) => {
-          const res = await fetch("/api/storage/uploads/request-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: f.name, size: f.size, contentType: f.type })
-          });
-          if (!res.ok) throw new Error("Failed to request upload URL");
-          return res.json();
-        }
-      });
+      const uploaded = await uploadFile(file);
+      if (!uploaded) throw new Error("Upload failed");
+      const { objectPath } = uploaded;
+      setPhotoUrl(objectPath.startsWith("/api") ? objectPath : `/api${objectPath}`);
     } catch (err: any) {
       console.error(err);
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
