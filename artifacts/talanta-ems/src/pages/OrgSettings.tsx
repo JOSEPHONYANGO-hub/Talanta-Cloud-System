@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useUpdateOrg, useOrg } from "@/hooks/useOrg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Check, Building2, Palette, Save, Shield } from "lucide-react";
+import { Check, Building2, Palette, Save, Shield, Upload, X } from "lucide-react";
+import { useUpload } from "@workspace/object-storage-web";
 
 const PRIMARY_PRESETS = [
   { label: "Indigo", value: "#6366f1" },
@@ -58,18 +59,54 @@ export default function OrgSettings() {
   const [name, setName] = useState("");
   const [industry, setIndustry] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [logoPreview, setLogoPreview] = useState("");
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [primaryColor, setPrimary] = useState("#6366f1");
   const [accentColor, setAccent] = useState("#10b981");
+  const { uploadFile } = useUpload({
+    onSuccess: (response) => {
+      setLogoUrl(response.objectPath);
+      setLogoPreview(response.objectPath);
+      setIsLogoUploading(false);
+      toast.success("Logo uploaded successfully");
+    },
+    onError: (err) => {
+      setIsLogoUploading(false);
+      toast.error(err.message || "Failed to upload logo");
+    },
+  });
 
   useEffect(() => {
     if (org) {
       setName(org.name);
       setIndustry(org.industry ?? "");
       setLogoUrl(org.logoUrl ?? "");
+      setLogoPreview(org.logoUrl ?? "");
       setPrimary(org.primaryColor);
       setAccent(org.accentColor);
     }
   }, [org]);
+
+  function handleLogoUpload(file: File | null) {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.");
+      return;
+    }
+    setIsLogoUploading(true);
+    setLogoPreview(URL.createObjectURL(file));
+    void uploadFile(file, {
+      requestUploadUrl: async (f) => {
+        const res = await fetch("/api/storage/uploads/request-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: f.name, size: f.size, contentType: f.type }),
+        });
+        if (!res.ok) throw new Error("Failed to request upload URL");
+        return res.json();
+      },
+    });
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -141,23 +178,54 @@ export default function OrgSettings() {
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium text-slate-700">Logo URL</Label>
+            <Label className="text-sm font-medium text-slate-700">Logo</Label>
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg border border-slate-200 shrink-0 flex items-center justify-center overflow-hidden bg-slate-50">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="logo" className="h-full w-full object-contain" />
+                {logoPreview ? (
+                  <img src={logoPreview} alt="logo" className="h-full w-full object-contain" />
                 ) : (
                   <span className="text-slate-300 text-lg font-bold">
                     {name?.[0]?.toUpperCase() || "?"}
                   </span>
                 )}
               </div>
-              <Input
-                value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://your-company.com/logo.png"
-                className="h-10 flex-1"
-              />
+              <div className="flex-1 space-y-2">
+                <label className="inline-flex h-10 items-center gap-2 rounded-md border border-input bg-white px-3 text-sm text-slate-700 cursor-pointer w-full">
+                  <Upload className="h-4 w-4 text-slate-500" />
+                  <span>{isLogoUploading ? "Uploading…" : "Upload logo"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleLogoUpload(e.target.files?.[0] ?? null)}
+                    disabled={isLogoUploading}
+                  />
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={logoUrl}
+                    onChange={(e) => {
+                      setLogoUrl(e.target.value);
+                      setLogoPreview(e.target.value);
+                    }}
+                    placeholder="Or paste a logo URL"
+                    className="h-10 flex-1"
+                  />
+                  {logoPreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setLogoUrl("");
+                        setLogoPreview("");
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
