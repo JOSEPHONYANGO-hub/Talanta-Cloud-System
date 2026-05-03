@@ -193,7 +193,7 @@ router.post("/employees", requireOrg, requireRole("admin"), async (req, res) => 
     res.status(201).json({ ...emp, departmentName: dept[0]?.name ?? null, branchName: br[0]?.name ?? null });
   } catch (err) {
     req.log.error({ err }, "Failed to create employee");
-    res.status(500).json({ error: "Failed to create employee" });
+    res.status(500).json({ error: err instanceof Error ? err.message : "Failed to create employee" });
   }
 });
 
@@ -268,7 +268,7 @@ router.put("/employees/:id", requireOrg, requireRole("admin"), async (req, res) 
     res.json({ ...emp, departmentName: dept[0]?.name ?? null, branchName: br[0]?.name ?? null });
   } catch (err) {
     req.log.error({ err }, "Failed to update employee");
-    res.status(500).json({ error: "Failed to update employee" });
+    res.status(500).json({ error: err instanceof Error ? err.message : "Failed to update employee" });
   }
 });
 

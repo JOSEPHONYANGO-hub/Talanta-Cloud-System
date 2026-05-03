@@ -190,9 +190,9 @@ export default function EmployeeForm() {
       branchId: data.branchId,
       phone: data.phone,
       email: data.email,
-      dateOfEmployment: data.dateOfEmployment.toISOString().split('T')[0],
+      dateOfEmployment: data.dateOfEmployment,
       status: (data.isActive ? "active" : "inactive") as CreateEmployeeBodyStatus,
-      photoUrl
+      photoUrl: photoUrl || null
     };
 
     if (isEditing) {
