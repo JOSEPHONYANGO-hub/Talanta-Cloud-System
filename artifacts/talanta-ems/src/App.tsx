@@ -19,10 +19,15 @@ import EmployeeProfile from "@/pages/EmployeeProfile";
 import EmployeeForm from "@/pages/EmployeeForm";
 import OrgSetup from "@/pages/OrgSetup";
 import OrgSettings from "@/pages/OrgSettings";
+import OrgAdmin from "@/pages/OrgAdmin";
+import SuperAdmin from "@/pages/SuperAdmin";
+import SuperAdminOrgDetail from "@/pages/SuperAdminOrgDetail";
 
 import Layout from "@/components/layout/Layout";
+import { SuperAdminLayout } from "@/components/layout/SuperAdminLayout";
 import { OrgProvider } from "@/context/OrgContext";
 import { useOrg } from "@/hooks/useOrg";
+import { useCheckSuperAdmin } from "@/hooks/useSuperAdmin";
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -159,6 +164,28 @@ function ProtectedRoute({ component: Component, ...rest }: any) {
   );
 }
 
+function SuperAdminRoute({ component: Component, ...rest }: any) {
+  const { data: adminCheck, isLoading } = useCheckSuperAdmin();
+  return (
+    <Route {...rest}>
+      <Show when="signed-in">
+        {isLoading ? (
+          <LoadingScreen />
+        ) : adminCheck?.isSuperAdmin ? (
+          <SuperAdminLayout>
+            <Component />
+          </SuperAdminLayout>
+        ) : (
+          <Redirect to="/dashboard" />
+        )}
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/" />
+      </Show>
+    </Route>
+  );
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const queryClient = useQueryClient();
@@ -227,8 +254,13 @@ function ClerkProviderWithRoutes() {
                 </Show>
               </Route>
 
-              {/* Protected app routes */}
+              {/* Super admin routes */}
+              <SuperAdminRoute path="/super-admin" component={SuperAdmin} />
+              <SuperAdminRoute path="/super-admin/organizations/:id" component={SuperAdminOrgDetail} />
+
+              {/* Protected org-level routes */}
               <ProtectedRoute path="/dashboard" component={Dashboard} />
+              <ProtectedRoute path="/admin" component={OrgAdmin} />
               <ProtectedRoute path="/employees" component={Employees} />
               <ProtectedRoute path="/employees/new" component={EmployeeForm} />
               <ProtectedRoute path="/employees/:id" component={EmployeeProfile} />

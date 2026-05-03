@@ -103,6 +103,24 @@ This project is the **Talanta-Cloud Solutions Employee Management System (EMS)**
 - `Departments.tsx` — department CRUD with table + dialogs
 - `Branches.tsx` — branch CRUD with table + dialogs
 
+## Super Admin Panel (`/super-admin`)
+
+- Gated by `SUPER_ADMIN_USER_IDS` env var (comma-separated Clerk user IDs)
+- `GET /api/super-admin/check` — returns `{ isSuperAdmin, userId }` (no guard, helps with setup)
+- `GET /api/super-admin/stats` — global totals (orgs, employees, members, departments)
+- `GET /api/super-admin/organizations` — all orgs with member/employee counts
+- `GET /api/super-admin/organizations/:id` — org detail (members, recent employees, counts)
+- `DELETE /api/super-admin/organizations/:id` — cascade-delete org + all data
+- `PATCH /api/super-admin/organizations/:id` — update org fields
+- Frontend: `SuperAdminLayout` (slate sidebar), `SuperAdmin.tsx` (table + delete), `SuperAdminOrgDetail.tsx`
+- Sidebar shows "Super Admin" link only when `useCheckSuperAdmin()` returns `isSuperAdmin: true`
+
+## Org Admin Hub (`/admin`)
+
+- Per-org management hub at `/admin` (protected route, requires org)
+- Shows org stats + cards linking to Employees, Departments, Branches, Settings
+- Accessible from sidebar under the "Admin" section ("Org Admin Hub" link)
+
 ## Codegen Notes
 
 - Orval config: `lib/api-spec/orval.config.ts`

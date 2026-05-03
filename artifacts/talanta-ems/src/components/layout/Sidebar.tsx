@@ -2,13 +2,14 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import {
   LayoutDashboard, Users, Building2, MapPin, LogOut,
-  Menu, ChevronRight, Settings2,
+  Menu, ChevronRight, Settings2, ShieldCheck, ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useOrg } from "@/hooks/useOrg";
+import { useCheckSuperAdmin } from "@/hooks/useSuperAdmin";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -22,6 +23,7 @@ export function Sidebar() {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { org } = useOrg();
+  const { data: adminCheck } = useCheckSuperAdmin();
 
   const userInitials = user?.firstName && user?.lastName
     ? `${user.firstName[0]}${user.lastName[0]}`
@@ -66,8 +68,32 @@ export function Sidebar() {
         );
       })}
 
-      {/* Settings */}
+      {/* Admin section */}
       <div className="pt-3 mt-3 border-t border-white/10">
+        <p className="px-3 pb-2 text-[9px] font-semibold text-indigo-300/30 uppercase tracking-widest">Admin</p>
+
+        <Link
+          href="/admin"
+          onClick={onLinkClick}
+          className={cn(
+            "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative",
+            location === "/admin"
+              ? "bg-white/15 text-white shadow-sm"
+              : "text-indigo-200/70 hover:bg-white/8 hover:text-white"
+          )}
+          data-testid="link-admin"
+        >
+          {location === "/admin" && (
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-indigo-300 rounded-full" />
+          )}
+          <ShieldCheck className={cn(
+            "mr-3 h-4 w-4 flex-shrink-0",
+            location === "/admin" ? "text-white" : "text-indigo-300/60 group-hover:text-indigo-200"
+          )} />
+          <span className="flex-1">Org Admin Hub</span>
+          {location === "/admin" && <ChevronRight className="h-3.5 w-3.5 text-indigo-300/60" />}
+        </Link>
+
         <Link
           href="/settings"
           onClick={onLinkClick}
@@ -88,6 +114,30 @@ export function Sidebar() {
           )} />
           <span className="flex-1">Settings</span>
         </Link>
+
+        {/* Super admin link — only visible to super admins */}
+        {adminCheck?.isSuperAdmin && (
+          <Link
+            href="/super-admin"
+            onClick={onLinkClick}
+            className={cn(
+              "group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 relative mt-0.5",
+              location.startsWith("/super-admin")
+                ? "bg-rose-500/20 text-rose-300 shadow-sm"
+                : "text-indigo-200/50 hover:bg-rose-500/10 hover:text-rose-300"
+            )}
+            data-testid="link-super-admin"
+          >
+            {location.startsWith("/super-admin") && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-rose-400 rounded-full" />
+            )}
+            <ShieldAlert className={cn(
+              "mr-3 h-4 w-4 flex-shrink-0",
+              location.startsWith("/super-admin") ? "text-rose-300" : "text-rose-400/50 group-hover:text-rose-400"
+            )} />
+            <span className="flex-1">Super Admin</span>
+          </Link>
+        )}
       </div>
     </nav>
   );
@@ -103,7 +153,9 @@ export function Sidebar() {
         </Avatar>
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-white truncate">{displayName}</p>
-          <p className="text-xs text-indigo-300/60 truncate">Administrator</p>
+          <p className="text-xs text-indigo-300/60 truncate">
+            {adminCheck?.isSuperAdmin ? "Super Administrator" : "Administrator"}
+          </p>
         </div>
       </div>
       <Button

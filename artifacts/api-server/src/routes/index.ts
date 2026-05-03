@@ -7,9 +7,11 @@ import dashboardRouter from "./dashboard";
 import aiRouter from "./ai";
 import storageRouter from "./storage";
 import organizationsRouter from "./organizations";
+import superAdminRouter from "./superAdmin";
 
 const router: IRouter = Router();
 
+router.use(superAdminRouter);
 router.use(organizationsRouter);
 router.use(healthRouter);
 router.use(employeesRouter);
