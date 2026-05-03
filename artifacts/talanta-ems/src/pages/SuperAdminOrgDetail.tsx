@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useLocation } from "wouter";
 import { useSuperAdminOrgDetail, useDeleteOrgAdmin } from "@/hooks/useSuperAdmin";
+import { useActivity } from "@/hooks/useActivity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft, Building2, Users, MapPin, Crown, UserCheck, User,
-  Trash2, Calendar, Briefcase, ShieldCheck,
+  Trash2, Calendar, Briefcase, ShieldCheck, Clock3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export default function SuperAdminOrgDetail() {
   const [, setLocation] = useLocation();
   const orgId = parseInt(id ?? "", 10);
   const { data: org, isLoading } = useSuperAdminOrgDetail(isNaN(orgId) ? null : orgId);
+  const { data: activity } = useActivity(10);
   const deleteMutation = useDeleteOrgAdmin();
   const [showDelete, setShowDelete] = useState(false);
 
@@ -73,7 +75,6 @@ export default function SuperAdminOrgDetail() {
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <Link
@@ -97,9 +98,7 @@ export default function SuperAdminOrgDetail() {
               <h1 className="text-xl font-bold text-slate-900">{org.name}</h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-sm text-slate-400">/{org.slug}</p>
-                {org.industry && (
-                  <Badge variant="secondary" className="text-xs">{org.industry}</Badge>
-                )}
+                {org.industry && <Badge variant="secondary" className="text-xs">{org.industry}</Badge>}
               </div>
             </div>
           </div>
@@ -115,7 +114,6 @@ export default function SuperAdminOrgDetail() {
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Employees", value: org.employeeCount, icon: Users, color: "bg-indigo-500" },
@@ -140,7 +138,6 @@ export default function SuperAdminOrgDetail() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Org info */}
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-3 pt-5 px-5">
             <CardTitle className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -168,7 +165,6 @@ export default function SuperAdminOrgDetail() {
           </CardContent>
         </Card>
 
-        {/* Team members */}
         <Card className="border-0 shadow-sm">
           <CardHeader className="pb-3 pt-5 px-5">
             <CardTitle className="text-sm font-semibold text-slate-900 flex items-center gap-2">
@@ -210,46 +206,33 @@ export default function SuperAdminOrgDetail() {
         </Card>
       </div>
 
-      {/* Recent employees */}
-      {org.recentEmployees.length > 0 && (
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="pb-3 pt-5 px-5">
-            <CardTitle className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-              <Users className="h-4 w-4 text-slate-400" /> Recent Employees
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-5 pb-5">
-            <div className="space-y-2">
-              {org.recentEmployees.map((emp) => (
-                <div key={emp.id} className="flex items-center justify-between py-1.5">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                      {emp.fullName[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-slate-800">{emp.fullName}</p>
-                      <p className="text-xs text-slate-400">{emp.jobTitle ?? "—"}</p>
-                    </div>
+      <Card className="border-0 shadow-sm">
+        <CardHeader className="pb-3 pt-5 px-5">
+          <CardTitle className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <Clock3 className="h-4 w-4 text-slate-400" /> Recent Activity
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-5 pb-5">
+          {activity?.length ? (
+            <div className="space-y-3">
+              {activity.map((item) => (
+                <div key={item.id} className="space-y-1 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-slate-800 capitalize">{item.action.replace(/_/g, " ")}</p>
+                    <span className="text-[10px] text-slate-400">{new Date(item.createdAt).toLocaleString()}</span>
                   </div>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "text-[10px] font-semibold capitalize",
-                      emp.status === "active"
-                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-slate-50 text-slate-500",
-                    )}
-                  >
-                    {emp.status}
-                  </Badge>
+                  <p className="text-[11px] text-slate-500">
+                    {item.actor.fullName ?? item.actor.email ?? item.actor.userId} · {item.entityType}
+                  </p>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : (
+            <p className="text-sm text-slate-400">No activity yet</p>
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Delete dialog */}
       <AlertDialog open={showDelete} onOpenChange={setShowDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
