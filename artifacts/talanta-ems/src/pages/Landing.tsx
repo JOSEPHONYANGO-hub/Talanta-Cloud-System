@@ -35,12 +35,6 @@ export default function Landing() {
           <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/4 w-[700px] h-[400px] bg-indigo-400/10 rounded-full blur-3xl" />
           <div className="pointer-events-none absolute top-20 right-1/4 w-48 h-48 bg-violet-400/8 rounded-full blur-2xl" />
 
-          {/* Badge */}
-          <div className="relative inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-600 text-xs font-semibold px-3.5 py-1.5 rounded-full mb-7 shadow-sm">
-            <Sparkles className="h-3 w-3" />
-            Designed for Talanta-Cloud Solutions
-          </div>
-
           <div className="relative max-w-3xl space-y-6">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
               Enterprise Grade
@@ -66,7 +60,6 @@ export default function Landing() {
               </Link>
             </div>
 
-            {/* Trust line */}
             <p className="text-xs text-slate-400 pt-2">
               Secured with enterprise-grade authentication · Role-based access
             </p>
@@ -118,75 +111,48 @@ export default function Landing() {
                     "Seamlessly manage departments and office locations across the entire organization from one place.",
                 },
                 {
-                  icon: ShieldCheck,
-                  color: "bg-emerald-100 text-emerald-600",
-                  title: "Director Level",
-                  description:
-                    "Dense, authoritative data views and bulk operations built specifically for leadership oversight.",
-                },
-                {
                   icon: BarChart3,
-                  color: "bg-cyan-100 text-cyan-600",
-                  title: "Live Analytics",
+                  color: "bg-emerald-100 text-emerald-600",
+                  title: "Analytics Dashboard",
                   description:
-                    "Workforce breakdown by department and branch with interactive charts updating in real time.",
-                },
-                {
-                  icon: Sparkles,
-                  color: "bg-amber-100 text-amber-600",
-                  title: "AI Summaries",
-                  description:
-                    "Automatically generated executive summaries for every employee profile powered by OpenAI.",
+                    "Track headcount, department distribution, and branch activity with clear executive-friendly charts.",
                 },
                 {
                   icon: Building2,
-                  color: "bg-rose-100 text-rose-600",
-                  title: "Org Structure",
+                  color: "bg-amber-100 text-amber-600",
+                  title: "Department Control",
                   description:
-                    "Manage departments, assign employees, and keep your organizational structure always current.",
+                    "Create and organize departments with flexible management tools for growing teams.",
+                },
+                {
+                  icon: ShieldCheck,
+                  color: "bg-rose-100 text-rose-600",
+                  title: "Secure Access",
+                  description:
+                    "Role-based access keeps your workforce data protected and organized by organization.",
+                },
+                {
+                  icon: Sparkles,
+                  color: "bg-sky-100 text-sky-600",
+                  title: "Brand-ready",
+                  description:
+                    "Customize your organization with logo and color branding for a polished experience.",
                 },
               ].map((feature) => (
                 <div
                   key={feature.title}
-                  className="group bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all duration-200"
+                  className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className={`inline-flex p-2.5 rounded-xl ${feature.color} mb-4`}>
+                  <div className={`h-11 w-11 rounded-xl flex items-center justify-center ${feature.color} mb-4`}>
                     <feature.icon className="h-5 w-5" />
                   </div>
-                  <h3 className="font-bold text-slate-800 mb-2">{feature.title}</h3>
-                  <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
+                  <h3 className="text-base font-semibold text-slate-800">{feature.title}</h3>
+                  <p className="text-sm text-slate-500 mt-2 leading-relaxed">{feature.description}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
-
-        {/* ── CTA strip ──────────────────────────────────── */}
-        <section className="px-6 py-14">
-          <div className="max-w-2xl mx-auto text-center bg-gradient-to-br from-indigo-600 to-violet-600 rounded-2xl p-10 shadow-xl shadow-indigo-200 relative overflow-hidden">
-            <div className="pointer-events-none absolute -top-6 -right-6 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-            <div className="relative">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-                Ready to take control?
-              </h2>
-              <p className="text-indigo-200 text-sm mb-7">
-                Sign in to access your organization's live workforce dashboard.
-              </p>
-              <Link
-                href="/sign-in"
-                className="inline-flex items-center justify-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-7 py-3 rounded-xl transition-colors shadow-md text-sm"
-              >
-                Sign In to Dashboard
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ── Footer ─────────────────────────────────────── */}
-        <footer className="text-center text-xs text-slate-400 py-8 border-t border-slate-100 bg-white">
-          © {new Date().getFullYear()} Talanta-Cloud Solutions. All rights reserved.
-        </footer>
       </main>
     </div>
   );
