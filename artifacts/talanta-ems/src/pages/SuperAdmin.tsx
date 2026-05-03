@@ -199,6 +199,7 @@ export default function SuperAdmin() {
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Industry</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center">Members</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center">Employees</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Created</TableHead>
                     <TableHead className="pr-6 text-xs font-semibold text-slate-500 uppercase tracking-wide text-right">Actions</TableHead>
                   </TableRow>
@@ -236,6 +237,17 @@ export default function SuperAdmin() {
                       </TableCell>
                       <TableCell className="text-center">
                         <span className="text-sm font-medium text-slate-700">{org.employeeCount}</span>
+                      </TableCell>
+                      <TableCell>
+                        {org.memberCount === 0 ? (
+                          <Badge variant="secondary" className="text-xs font-medium bg-amber-50 text-amber-700 border-amber-200">
+                            Awaiting admin acceptance
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs font-medium bg-emerald-50 text-emerald-700 border-emerald-200">
+                            Active
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span className="text-xs text-slate-500">{formatDate(org.createdAt)}</span>

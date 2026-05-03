@@ -165,7 +165,7 @@ router.post("/super-admin/organizations", requireSuperAdmin, async (req, res) =>
 
 router.post("/super-admin/organizations/:id/invite", requireSuperAdmin, async (req, res) => {
   try {
-    const orgId = parseInt(req.params.id, 10);
+    const orgId = parseInt(String(req.params.id), 10);
     if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org ID" }); return; }
 
     const { email, role } = req.body ?? {};
@@ -216,7 +216,7 @@ router.post("/super-admin/organizations/:id/invite", requireSuperAdmin, async (r
 
 router.get("/super-admin/organizations/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const orgId = parseInt(req.params.id, 10);
+    const orgId = parseInt(String(req.params.id), 10);
     if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org ID" }); return; }
 
     const [[org], members, [empCount], [deptCount], [branchCount], recentEmployees] =
@@ -263,7 +263,7 @@ router.get("/super-admin/organizations/:id", requireSuperAdmin, async (req, res)
 
 router.delete("/super-admin/organizations/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const orgId = parseInt(req.params.id, 10);
+    const orgId = parseInt(String(req.params.id), 10);
     if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org ID" }); return; }
 
     await db.delete(employees).where(eq(employees.orgId, orgId));
@@ -283,7 +283,7 @@ router.delete("/super-admin/organizations/:id", requireSuperAdmin, async (req, r
 
 router.patch("/super-admin/organizations/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const orgId = parseInt(req.params.id, 10);
+    const orgId = parseInt(String(req.params.id), 10);
     if (isNaN(orgId)) { res.status(400).json({ error: "Invalid org ID" }); return; }
 
     const { name, industry, logoUrl, primaryColor, accentColor } = req.body ?? {};
