@@ -4,8 +4,6 @@ import { format } from "date-fns";
 import { 
   useGetEmployee, 
   useDeleteEmployee,
-  useGenerateEmployeeSummary,
-  getGetEmployeeQueryKey,
   getListEmployeesQueryKey,
   getGetDashboardStatsQueryKey,
   getGetEmployeesByDepartmentQueryKey,
@@ -14,7 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { 
   ArrowLeft, Building2, MapPin, Mail, Phone, Calendar, 
-  Pencil, Trash2, Sparkles, CheckCircle2, XCircle, Briefcase
+  Pencil, Trash2, CheckCircle2, XCircle, Briefcase
 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -45,7 +43,7 @@ export default function EmployeeProfile() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { data: employee, isLoading, error } = useGetEmployee(empId, {
-    query: { enabled: !!empId && !isNaN(empId) }
+    query: { enabled: !!empId && !isNaN(empId), queryKey: ["employee", empId] }
   });
 
   const deleteMutation = useDeleteEmployee({
@@ -64,34 +62,6 @@ export default function EmployeeProfile() {
       }
     }
   });
-
-  const generateSummaryMutation = useGenerateEmployeeSummary({
-    mutation: {
-      onSuccess: (res) => {
-        // Optimistically update the cache
-        queryClient.setQueryData(getGetEmployeeQueryKey(empId), (old: any) => 
-          old ? { ...old, summary: res.summary } : old
-        );
-        toast({ title: "Summary generated successfully.", icon: <Sparkles className="h-4 w-4" /> });
-      },
-      onError: () => {
-        toast({ title: "Failed to generate summary.", variant: "destructive" });
-      }
-    }
-  });
-
-  const handleGenerateSummary = () => {
-    if (!employee) return;
-    generateSummaryMutation.mutate({
-      data: {
-        fullName: employee.fullName,
-        jobTitle: employee.jobTitle,
-        department: employee.departmentName || "Unknown",
-        branch: employee.branchName,
-        dateOfEmployment: employee.dateOfEmployment
-      }
-    });
-  };
 
   if (error) {
     return (
@@ -240,52 +210,21 @@ export default function EmployeeProfile() {
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  Professional Summary
-                </CardTitle>
-                <CardDescription>AI-generated overview of the employee's role and standing.</CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleGenerateSummary}
-                disabled={generateSummaryMutation.isPending}
-                className="gap-2"
-                data-testid="btn-generate-summary"
-              >
-                {generateSummaryMutation.isPending ? (
-                  <>Generating...</>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" />
-                    {employee.summary ? "Regenerate" : "Generate"}
-                  </>
-                )}
-              </Button>
+            <CardHeader>
+              <CardTitle>Employee Information</CardTitle>
+              <CardDescription>Key record details available in the system.</CardDescription>
             </CardHeader>
-            <CardContent className="pt-6">
-              {employee.summary ? (
-                <div className="prose max-w-none text-slate-700 leading-relaxed text-sm sm:text-base">
-                  {employee.summary.split('\n').map((paragraph, i) => (
-                    paragraph.trim() && <p key={i}>{paragraph}</p>
-                  ))}
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium mb-1">Professional Summary</p>
+                  <p className="font-medium text-foreground">{employee.summary || "Not provided"}</p>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="bg-primary/5 h-12 w-12 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="text-muted-foreground mb-4 max-w-sm mx-auto text-sm">
-                    Generate an AI-powered professional summary to quickly understand this employee's role within the organization.
-                  </p>
-                  <Button onClick={handleGenerateSummary} disabled={generateSummaryMutation.isPending}>
-                    Generate Summary
-                  </Button>
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium mb-1">Record Type</p>
+                  <p className="font-medium text-foreground">Employee profile</p>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
           

@@ -101,7 +101,7 @@ export default function Landing() {
                   color: "bg-indigo-100 text-indigo-600",
                   title: "Complete Directory",
                   description:
-                    "Comprehensive employee profiles with AI-generated summaries, photo support, and real-time status tracking.",
+                    "Comprehensive employee profiles with qualifications, photo support, and real-time status tracking.",
                 },
                 {
                   icon: Globe,
